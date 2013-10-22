@@ -1,7 +1,7 @@
 # JACOB
 
-Small CBOR[1] implementation for Java, based on the latest draft of the CBOR
-specification.
+Small [CBOR][1] implementation for Java, based on the latest draft (= 09) of the
+CBOR specification.
 
 ## Supported types
 
@@ -16,12 +16,12 @@ values as defined in IEEE 754. Note that currently not the all values of an
 
 ## To do
 
-[ ] add support for encoding/decoding semantic tags;
-[ ] add better support for decoding unlimited arrays, strings and maps;
-[ ] provide a "lazy"/"chunked" decoder API;
-[ ] provide an event-like API, similar as to StAX;
-[ ] implement support for `uint64_t` types that cannot handled directly by Java's long value;
-[ ] better error handling and testing.
+- [ ] add support for encoding/decoding semantic tags;
+- [ ] add better support for decoding unlimited arrays, strings and maps;
+- [ ] provide a "lazy"/"chunked" decoder API;
+- [ ] provide an event-like API, similar as to StAX;
+- [ ] implement support for `uint64_t` types that cannot handled directly by Java's long value;
+- [ ] better error handling and testing.
 
 ## License
 
@@ -33,4 +33,4 @@ J.W. Janssen <j.w.janssen@lxtreme.nl>
 
 ## References
 
-1. http://tools.ietf.org/id/draft-bormann-cbor-09.html
+[1]. http://tools.ietf.org/id/draft-bormann-cbor-09.html
