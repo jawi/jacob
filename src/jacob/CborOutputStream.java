@@ -40,7 +40,7 @@ public class CborOutputStream extends FilterOutputStream {
      * @param fval the value to convert.
      * @return the raw integer representation of the given float value.
      */
-    private static int halfPrecisionToRawIntBits(float fval) {
+    static int halfPrecisionToRawIntBits(float fval) {
         int fbits = Float.floatToIntBits(fval);
         int sign = (fbits >>> 16) & 0x8000;
         int val = (fbits & 0x7fffffff) + 0x1000;
@@ -116,6 +116,36 @@ public class CborOutputStream extends FilterOutputStream {
     }
 
     /**
+     * Writes the start of an indefinite-length array.
+     * <p>
+     * After calling this method, one is expected to write the given number of array elements, which can be of any type. No length checks are performed.<br/>
+     * After all array elements are written, one should write a single break value to end the array, see {@link #writeBreak()}.
+     * </p>
+     * 
+     * @throws IOException in case of I/O problems writing the CBOR-encoded value to the underlying output stream.
+     */
+    public void writeArrayStart() throws IOException {
+        write(ARRAY.encode(BREAK));
+    }
+
+    /**
+     * Writes the start of a finite-length array.
+     * <p>
+     * After calling this method, one is expected to write the given number of array elements, which can be of any type. No length checks are performed.
+     * </p>
+     * 
+     * @param length the number of array elements to write, should &gt;= 0.
+     * @throws IllegalArgumentException in case the given length was negative;
+     * @throws IOException in case of I/O problems writing the CBOR-encoded value to the underlying output stream.
+     */
+    public void writeArrayStart(int length) throws IOException {
+        if (length < 0) {
+            throw new IllegalArgumentException("Invalid array-length!");
+        }
+        writeType(ARRAY, length);
+    }
+
+    /**
      * Writes a boolean value in canonical CBOR format.
      * 
      * @param value the boolean to write.
@@ -132,6 +162,43 @@ public class CborOutputStream extends FilterOutputStream {
      */
     public void writeBreak() throws IOException {
         write(FLOAT_SIMPLE.encode(BREAK));
+    }
+
+    /**
+     * Writes a byte string in canonical CBOR-format.
+     * 
+     * @param value the byte string to write, can be <code>null</code> in which case a byte-string of length <tt>0</tt> is written.
+     * @throws IOException in case of I/O problems writing the CBOR-encoded value to the underlying output stream.
+     */
+    public void writeByteString(byte[] bytes) throws IOException {
+        writeString(BYTE_STRING, bytes);
+    }
+
+    /**
+     * Writes a byte string in canonical CBOR-format.
+     * <p>
+     * Note that this method is <em>platform</em> specific, as the given string value will be encoded in a byte array
+     * using the <em>platform</em> encoding! This means that the encoding must be standardized and known.
+     * </p>
+     * 
+     * @param value the byte string to write, can be <code>null</code> in which case a byte-string of length <tt>0</tt> is written.
+     * @throws IOException in case of I/O problems writing the CBOR-encoded value to the underlying output stream.
+     */
+    public void writeByteString(String value) throws IOException {
+        writeString(BYTE_STRING, value == null ? null : value.getBytes());
+    }
+
+    /**
+     * Writes the start of an indefinite-length byte string.
+     * <p>
+     * After calling this method, one is expected to write the given number of string parts. No length checks are performed.<br/>
+     * After all string parts are written, one should write a single break value to end the string, see {@link #writeBreak()}.
+     * </p>
+     * 
+     * @throws IOException in case of I/O problems writing the CBOR-encoded value to the underlying output stream.
+     */
+    public void writeByteStringStart() throws IOException {
+        write(BYTE_STRING.encode(BREAK));
     }
 
     /**
@@ -165,7 +232,7 @@ public class CborOutputStream extends FilterOutputStream {
     }
 
     /**
-     * Writes a signed or unsigned integer value in canonical CBOR format.
+     * Writes a signed or unsigned integer value in canonical CBOR format, that is, tries to encode it in a little bytes as possible..
      * 
      * @param value the value to write, values from {@link Long#MIN_VALUE} to {@link Long#MAX_VALUE} are supported.
      * @throws IOException in case of I/O problems writing the CBOR-encoded value to the underlying output stream.
@@ -176,9 +243,69 @@ public class CborOutputStream extends FilterOutputStream {
         // in case value is negative, this bit should be set...
         int mt = (int) (sign & NEGATIVE_INTEGER.bitMask());
         // complement negative value...
-        value = sign ^ value;
+        value = (sign ^ value);
 
         writeUInt(mt, value);
+    }
+
+    /**
+     * Writes a signed or unsigned 16-bit integer value in CBOR format.
+     * 
+     * @param value the value to write, values from <tt>[-65536..65535]</tt> are supported.
+     * @throws IOException in case of I/O problems writing the CBOR-encoded value to the underlying output stream.
+     */
+    public void writeInt16(int value) throws IOException {
+        // extends the sign over all bits...
+        int sign = value >> 31;
+        // in case value is negative, this bit should be set...
+        int mt = (int) (sign & NEGATIVE_INTEGER.bitMask());
+        // complement negative value...
+        writeUInt16(mt, (sign ^ value) & 0xffff);
+    }
+
+    /**
+     * Writes a signed or unsigned 32-bit integer value in CBOR format.
+     * 
+     * @param value the value to write, values in the range <tt>[-4294967296..4294967295]</tt> are supported.
+     * @throws IOException in case of I/O problems writing the CBOR-encoded value to the underlying output stream.
+     */
+    public void writeInt32(long value) throws IOException {
+        // extends the sign over all bits...
+        long sign = value >> 63;
+        // in case value is negative, this bit should be set...
+        int mt = (int) (sign & NEGATIVE_INTEGER.bitMask());
+        // complement negative value...
+        writeUInt32(mt, (int) ((sign ^ value) & 0xffffffffL));
+    }
+
+    /**
+     * Writes a signed or unsigned 64-bit integer value in CBOR format.
+     * 
+     * @param value the value to write, values from {@link Long#MIN_VALUE} to {@link Long#MAX_VALUE} are supported.
+     * @throws IOException in case of I/O problems writing the CBOR-encoded value to the underlying output stream.
+     */
+    public void writeInt64(long value) throws IOException {
+        // extends the sign over all bits...
+        long sign = value >> 63;
+        // in case value is negative, this bit should be set...
+        int mt = (int) (sign & NEGATIVE_INTEGER.bitMask());
+        // complement negative value...
+        writeUInt64(mt, sign ^ value);
+    }
+
+    /**
+     * Writes a signed or unsigned 8-bit integer value in CBOR format.
+     * 
+     * @param value the value to write, values in the range <tt>[-256..255]</tt> are supported.
+     * @throws IOException in case of I/O problems writing the CBOR-encoded value to the underlying output stream.
+     */
+    public void writeInt8(int value) throws IOException {
+        // extends the sign over all bits...
+        int sign = value >> 31;
+        // in case value is negative, this bit should be set...
+        int mt = (int) (sign & NEGATIVE_INTEGER.bitMask());
+        // complement negative value...
+        writeUInt8(mt, (sign ^ value) & 0xff);
     }
 
     /**
@@ -236,6 +363,36 @@ public class CborOutputStream extends FilterOutputStream {
     }
 
     /**
+     * Writes the start of an indefinite-length map.
+     * <p>
+     * After calling this method, one is expected to write any number of map entries, as separate key and value. Keys and values can both be of any type. No length checks are performed.<br/>
+     * After all map entries are written, one should write a single break value to end the map, see {@link #writeBreak()}.
+     * </p>
+     * 
+     * @throws IOException in case of I/O problems writing the CBOR-encoded value to the underlying output stream.
+     */
+    public void writeMapStart() throws IOException {
+        write(MAP.encode(BREAK));
+    }
+
+    /**
+     * Writes the start of a finite-length map.
+     * <p>
+     * After calling this method, one is expected to write any number of map entries, as separate key and value. Keys and values can both be of any type. No length checks are performed.
+     * </p>
+     * 
+     * @param length the number of map entries to write, should &gt;= 0.
+     * @throws IllegalArgumentException in case the given length was negative;
+     * @throws IOException in case of I/O problems writing the CBOR-encoded value to the underlying output stream.
+     */
+    public void writeMapStart(int length) throws IOException {
+        if (length < 0) {
+            throw new IllegalArgumentException("Invalid length of map!");
+        }
+        writeType(MAP, length);
+    }
+
+    /**
      * Writes a <code>null</code> value in canonical CBOR format.
      * 
      * @throws IOException in case of I/O problems writing the CBOR-encoded value to the underlying output stream.
@@ -257,36 +414,56 @@ public class CborOutputStream extends FilterOutputStream {
     }
 
     /**
-     * Writes a byte string in canonical CBOR-format.
+     * Writes a signed or unsigned small (&lt;= 23) integer value in CBOR format.
      * 
-     * @param value the byte string to write, can be <code>null</code> in which case a byte-string of length <tt>0</tt> is written.
+     * @param value the value to write, values in the range <tt>[-24..23]</tt> are supported.
      * @throws IOException in case of I/O problems writing the CBOR-encoded value to the underlying output stream.
      */
-    public void writeString(byte[] bytes) throws IOException {
-        writeString(BYTE_STRING, bytes);
+    public void writeSmallInt(int value) throws IOException {
+        // extends the sign over all bits...
+        int sign = value >> 31;
+        // in case value is negative, this bit should be set...
+        int mt = (int) (sign & NEGATIVE_INTEGER.bitMask());
+        // complement negative value...
+        value = Math.min(0x17, (sign ^ value));
+
+        write((int) (mt | value));
     }
 
     /**
-     * Writes a byte string in canonical CBOR-format.
-     * <p>
-     * Note that this method is <em>platform</em> specific, as the given string value will be encoded in a byte array
-     * using the <em>platform</em> encoding! This means that the encoding must be standardized and known.
-     * </p>
+     * Writes a semantic tag in canonical CBOR format.
      * 
-     * @param value the byte string to write, can be <code>null</code> in which case a byte-string of length <tt>0</tt> is written.
+     * @param tag the tag to write, should &gt;= 0;
+     * @param data the tagged data to write, can be <code>null</code>.
+     * @throws IllegalArgumentException in case the given tag was negative;
      * @throws IOException in case of I/O problems writing the CBOR-encoded value to the underlying output stream.
      */
-    public void writeString(String value) throws IOException {
-        writeString(BYTE_STRING, value == null ? null : value.getBytes());
-    }
+    public void writeTag(int tag, Object data) throws IOException {
+        if (tag < 0) {
+            throw new IllegalArgumentException("Invalid tag specification, cannot be negative!");
+        }
+        writeType(TAG, tag);
 
-    /**
-     * Writes an "undefined" value in canonical CBOR format.
-     * 
-     * @throws IOException in case of I/O problems writing the CBOR-encoded value to the underlying output stream.
-     */
-    public void writeUndefined() throws IOException {
-        write(FLOAT_SIMPLE.encode(UNDEFINED));
+        // XXX note sure whether this is the right place...
+        switch (tag) {
+            case 0:
+            case 32:
+            case 33:
+            case 34:
+            case 35:
+            case 36:
+                writeTextString(String.valueOf(data));
+                break;
+            case 2:
+            case 3:
+            case 23:
+            case 24:
+                writeByteString(String.valueOf(data));
+                break;
+            default:
+                writeGenericItem(data);
+                break;
+        }
     }
 
     /**
@@ -299,8 +476,30 @@ public class CborOutputStream extends FilterOutputStream {
      * @param value the UTF-8 string to write, can be <code>null</code> in which case an UTF-8 string of length <tt>0</tt> is written.
      * @throws IOException in case of I/O problems writing the CBOR-encoded value to the underlying output stream.
      */
-    public void writeUTF8String(String value) throws IOException {
+    public void writeTextString(String value) throws IOException {
         writeString(TEXT_STRING, value == null ? null : value.getBytes("UTF-8"));
+    }
+
+    /**
+     * Writes the start of an indefinite-length UTF-8 string.
+     * <p>
+     * After calling this method, one is expected to write the given number of string parts. No length checks are performed.<br/>
+     * After all string parts are written, one should write a single break value to end the string, see {@link #writeBreak()}.
+     * </p>
+     * 
+     * @throws IOException in case of I/O problems writing the CBOR-encoded value to the underlying output stream.
+     */
+    public void writeTextStringStart() throws IOException {
+        write(TEXT_STRING.encode(BREAK));
+    }
+
+    /**
+     * Writes an "undefined" value in canonical CBOR format.
+     * 
+     * @throws IOException in case of I/O problems writing the CBOR-encoded value to the underlying output stream.
+     */
+    public void writeUndefined() throws IOException {
+        write(FLOAT_SIMPLE.encode(UNDEFINED));
     }
 
     /**
@@ -335,7 +534,7 @@ public class CborOutputStream extends FilterOutputStream {
                 writeInt(num.longValue());
             }
         } else if (item instanceof String) {
-            writeUTF8String((String) item);
+            writeTextString((String) item);
         } else if (item instanceof Boolean) {
             writeBoolean((Boolean) item);
         } else if (item instanceof Map) {
@@ -380,7 +579,7 @@ public class CborOutputStream extends FilterOutputStream {
     }
 
     /**
-     * Encodes and writes an unsigned integer value
+     * Encodes and writes an unsigned integer value, that is, tries to encode it in a little bytes as possible.
      * 
      * @param mt the major type of the value to write, denotes what semantics the written value has;
      * @param value the value to write, values from {@link Long#MIN_VALUE} to {@link Long#MAX_VALUE} are supported.

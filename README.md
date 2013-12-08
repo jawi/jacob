@@ -1,7 +1,7 @@
 # JACOB
 
-Small [CBOR][1] implementation for Java, based on the latest draft (= 09) of the
-CBOR specification.
+Small [CBOR][1] implementation for Java, based on the proposed standard of the
+CBOR specification, RFC 7049.
 
 ## Supported types
 
@@ -10,9 +10,9 @@ Almost all major types as defined by CBOR are supported, apart from major type
 
 ## Supported values
 
-All basic Java types are supported, including support for half-precision float
-values as defined in IEEE 754. Note that currently not the all values of an
-`uint64_t` value are supported by this implementation.
+All basic Java types are supported, including support for half-precision float values 
+as defined in IEEE 754. Note that currently not the all values of an `uint64_t` value 
+are supported by this implementation.
 
 ## To do
 
@@ -33,4 +33,4 @@ J.W. Janssen <j.w.janssen@lxtreme.nl>
 
 ## References
 
-[1]. http://tools.ietf.org/id/draft-bormann-cbor-09.html
+[1]. http://tools.ietf.org/html/rfc7049

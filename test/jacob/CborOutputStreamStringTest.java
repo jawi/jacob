@@ -60,9 +60,9 @@ public class CborOutputStreamStringTest extends CborOutputStreamTestBase<String>
     @Test
     public void testEncodeInput() throws IOException {
         if (m_utf8) {
-            m_stream.writeUTF8String(m_input);
+            m_stream.writeTextString(m_input);
         } else {
-            m_stream.writeString(m_input);
+            m_stream.writeByteString(m_input);
         }
 
         assertStreamContentsIsExpected();
