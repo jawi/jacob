@@ -15,21 +15,21 @@ import java.lang.reflect.Array;
 import java.util.Map;
 
 /**
- * Base class for all {@link CborOutputStream} test cases.
+ * Base class for all {@link CborEncoder} test cases.
  */
-public class CborOutputStreamTestBase<T> {
+public class CborEncoderTestBase<T> {
     protected final T m_input;
-    protected final CborOutputStream m_stream;
+    protected final CborEncoder m_stream;
 
     private final int[] m_encodedOutput;
     private final ByteArrayOutputStream m_baos;
 
-    public CborOutputStreamTestBase(T input, int[] encodedOutput) {
+    public CborEncoderTestBase(T input, int[] encodedOutput) {
         m_input = input;
         m_encodedOutput = encodedOutput;
 
         m_baos = new ByteArrayOutputStream();
-        m_stream = new CborOutputStream(m_baos);
+        m_stream = new CborEncoder(m_baos);
     }
 
     /**

@@ -19,11 +19,11 @@ import org.junit.runners.Parameterized.Parameters;
  * Test cases for encoding data in the CBOR format.
  */
 @RunWith(Parameterized.class)
-public class CborOutputStreamSimpleValueTest extends CborOutputStreamTestBase<Integer> {
+public class CborEncoderSimpleValueTest extends CborEncoderTestBase<Integer> {
     /**
-     * Creates a new {@link CborOutputStreamSimpleValueTest} instance.
+     * Creates a new {@link CborEncoderSimpleValueTest} instance.
      */
-    public CborOutputStreamSimpleValueTest(int input, int[] encodedOutput) {
+    public CborEncoderSimpleValueTest(int input, int[] encodedOutput) {
         super(input, encodedOutput);
     }
 

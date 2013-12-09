@@ -24,21 +24,25 @@ import static jacob.CborType.NEGATIVE_INTEGER;
 import static jacob.CborType.TAG;
 import static jacob.CborType.TEXT_STRING;
 
-import java.io.FilterOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 
 /**
- * Provides an {@link OutputStream} capable of encoding data into CBOR format.
+ * Provides an encoder capable of encoding data into CBOR format to a given {@link OutputStream}.
  */
-public class CborOutputStream extends FilterOutputStream {
+public class CborEncoder {
+    private final OutputStream m_os;
+
     /**
-     * Creates a new {@link CborOutputStream} instance.
+     * Creates a new {@link CborEncoder} instance.
      * 
      * @param os the actual output stream to write the CBOR-encoded data to, cannot be <code>null</code>.
      */
-    public CborOutputStream(OutputStream os) {
-        super(os);
+    public CborEncoder(OutputStream os) {
+        if (os == null) {
+            throw new IllegalArgumentException("OutputStream cannot be null!");
+        }
+        m_os = os;
     }
 
     /**
@@ -91,7 +95,7 @@ public class CborOutputStream extends FilterOutputStream {
      * @throws IOException in case of I/O problems writing the CBOR-encoded value to the underlying output stream.
      */
     public void writeArrayStart() throws IOException {
-        write(ARRAY.encode(BREAK));
+        m_os.write(ARRAY.encode(BREAK));
     }
 
     /**
@@ -118,7 +122,7 @@ public class CborOutputStream extends FilterOutputStream {
      * @throws IOException in case of I/O problems writing the CBOR-encoded value to the underlying output stream.
      */
     public void writeBoolean(boolean value) throws IOException {
-        write(FLOAT_SIMPLE.encode(value ? TRUE : FALSE));
+        m_os.write(FLOAT_SIMPLE.encode(value ? TRUE : FALSE));
     }
 
     /**
@@ -127,7 +131,7 @@ public class CborOutputStream extends FilterOutputStream {
      * @throws IOException in case of I/O problems writing the CBOR-encoded value to the underlying output stream.
      */
     public void writeBreak() throws IOException {
-        write(FLOAT_SIMPLE.encode(BREAK));
+        m_os.write(FLOAT_SIMPLE.encode(BREAK));
     }
 
     /**
@@ -164,7 +168,7 @@ public class CborOutputStream extends FilterOutputStream {
      * @throws IOException in case of I/O problems writing the CBOR-encoded value to the underlying output stream.
      */
     public void writeByteStringStart() throws IOException {
-        write(BYTE_STRING.encode(BREAK));
+        m_os.write(BYTE_STRING.encode(BREAK));
     }
 
     /**
@@ -284,7 +288,7 @@ public class CborOutputStream extends FilterOutputStream {
      * @throws IOException in case of I/O problems writing the CBOR-encoded value to the underlying output stream.
      */
     public void writeMapStart() throws IOException {
-        write(MAP.encode(BREAK));
+        m_os.write(MAP.encode(BREAK));
     }
 
     /**
@@ -310,7 +314,7 @@ public class CborOutputStream extends FilterOutputStream {
      * @throws IOException in case of I/O problems writing the CBOR-encoded value to the underlying output stream.
      */
     public void writeNull() throws IOException {
-        write(FLOAT_SIMPLE.encode(NULL));
+        m_os.write(FLOAT_SIMPLE.encode(NULL));
     }
 
     /**
@@ -339,7 +343,7 @@ public class CborOutputStream extends FilterOutputStream {
         // complement negative value...
         value = Math.min(0x17, (sign ^ value));
 
-        write((int) (mt | value));
+        m_os.write((int) (mt | value));
     }
 
     /**
@@ -380,7 +384,7 @@ public class CborOutputStream extends FilterOutputStream {
      * @throws IOException in case of I/O problems writing the CBOR-encoded value to the underlying output stream.
      */
     public void writeTextStringStart() throws IOException {
-        write(TEXT_STRING.encode(BREAK));
+        m_os.write(TEXT_STRING.encode(BREAK));
     }
 
     /**
@@ -389,7 +393,7 @@ public class CborOutputStream extends FilterOutputStream {
      * @throws IOException in case of I/O problems writing the CBOR-encoded value to the underlying output stream.
      */
     public void writeUndefined() throws IOException {
-        write(FLOAT_SIMPLE.encode(UNDEFINED));
+        m_os.write(FLOAT_SIMPLE.encode(UNDEFINED));
     }
 
     /**
@@ -403,7 +407,7 @@ public class CborOutputStream extends FilterOutputStream {
         int len = (bytes == null) ? 0 : bytes.length;
         writeType(majorType, len);
         for (int i = 0; i < len; i++) {
-            write(bytes[i]);
+            m_os.write(bytes[i]);
         }
     }
 
@@ -427,7 +431,7 @@ public class CborOutputStream extends FilterOutputStream {
      */
     protected void writeUInt(int mt, long value) throws IOException {
         if (value < 0x18L) {
-            write((int) (mt | value));
+            m_os.write((int) (mt | value));
         } else if (value < 0x100L) {
             writeUInt8(mt, (int) value);
         } else if (value < 0x10000L) {
@@ -447,9 +451,9 @@ public class CborOutputStream extends FilterOutputStream {
      * @throws IOException in case of I/O problems writing the CBOR-encoded value to the underlying output stream.
      */
     protected void writeUInt16(int mt, int value) throws IOException {
-        write(mt | TWO_BYTES);
-        write(value >> 8);
-        write(value & 0xFF);
+        m_os.write(mt | TWO_BYTES);
+        m_os.write(value >> 8);
+        m_os.write(value & 0xFF);
     }
 
     /**
@@ -460,11 +464,11 @@ public class CborOutputStream extends FilterOutputStream {
      * @throws IOException in case of I/O problems writing the CBOR-encoded value to the underlying output stream.
      */
     protected void writeUInt32(int mt, int value) throws IOException {
-        write(mt | FOUR_BYTES);
-        write(value >> 24);
-        write(value >> 16);
-        write(value >> 8);
-        write(value & 0xFF);
+        m_os.write(mt | FOUR_BYTES);
+        m_os.write(value >> 24);
+        m_os.write(value >> 16);
+        m_os.write(value >> 8);
+        m_os.write(value & 0xFF);
     }
 
     /**
@@ -475,15 +479,15 @@ public class CborOutputStream extends FilterOutputStream {
      * @throws IOException in case of I/O problems writing the CBOR-encoded value to the underlying output stream.
      */
     protected void writeUInt64(int mt, long value) throws IOException {
-        write(mt | EIGHT_BYTES);
-        write((int) (value >> 56));
-        write((int) (value >> 48));
-        write((int) (value >> 40));
-        write((int) (value >> 32));
-        write((int) (value >> 24));
-        write((int) (value >> 16));
-        write((int) (value >> 8));
-        write((int) (value & 0xFF));
+        m_os.write(mt | EIGHT_BYTES);
+        m_os.write((int) (value >> 56));
+        m_os.write((int) (value >> 48));
+        m_os.write((int) (value >> 40));
+        m_os.write((int) (value >> 32));
+        m_os.write((int) (value >> 24));
+        m_os.write((int) (value >> 16));
+        m_os.write((int) (value >> 8));
+        m_os.write((int) (value & 0xFF));
     }
 
     /**
@@ -494,7 +498,7 @@ public class CborOutputStream extends FilterOutputStream {
      * @throws IOException in case of I/O problems writing the CBOR-encoded value to the underlying output stream.
      */
     protected void writeUInt8(int mt, int value) throws IOException {
-        write(mt | ONE_BYTE);
-        write(value & 0xFF);
+        m_os.write(mt | ONE_BYTE);
+        m_os.write(value & 0xFF);
     }
 }

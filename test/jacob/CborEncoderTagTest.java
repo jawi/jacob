@@ -19,13 +19,13 @@ import org.junit.runners.Parameterized.Parameters;
  * Test cases for encoding data in the CBOR format.
  */
 @RunWith(Parameterized.class)
-public class CborOutputStreamTagTest extends CborOutputStreamTestBase<Long> {
+public class CborEncoderTagTest extends CborEncoderTestBase<Long> {
     private final Object m_data;
 
     /**
-     * Creates a new {@link CborOutputStreamTagTest} instance.
+     * Creates a new {@link CborEncoderTagTest} instance.
      */
-    public CborOutputStreamTagTest(long type, Object data, int[] encodedOutput) {
+    public CborEncoderTagTest(long type, Object data, int[] encodedOutput) {
         super(type, encodedOutput);
 
         m_data = data;

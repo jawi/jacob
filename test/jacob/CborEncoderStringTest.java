@@ -20,16 +20,16 @@ import org.junit.runners.Parameterized.Parameters;
  * Test cases for encoding data in the CBOR format.
  */
 @RunWith(Parameterized.class)
-public class CborOutputStreamStringTest extends CborOutputStreamTestBase<String> {
+public class CborEncoderStringTest extends CborEncoderTestBase<String> {
     private static final boolean PLATFORM_ENCODING = false;
     private static final boolean UTF8_ENCODING = true;
 
     private final boolean m_utf8;
 
     /**
-     * Creates a new {@link CborOutputStreamStringTest} instance.
+     * Creates a new {@link CborEncoderStringTest} instance.
      */
-    public CborOutputStreamStringTest(String input, int[] encodedOutput, boolean utf8)
+    public CborEncoderStringTest(String input, int[] encodedOutput, boolean utf8)
         throws UnsupportedEncodingException {
         super(input, encodedOutput);
         m_utf8 = utf8;

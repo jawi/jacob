@@ -19,12 +19,12 @@ import org.junit.runners.Parameterized.Parameters;
  * Test cases for encoding data in the CBOR format.
  */
 @RunWith(Parameterized.class)
-public class CborOutputStreamHalfPrecisionTest extends CborOutputStreamTestBase<Float> {
+public class CborEncoderHalfPrecisionTest extends CborEncoderTestBase<Float> {
 
     /**
-     * Creates a new {@link CborOutputStreamHalfPrecisionTest} instance.
+     * Creates a new {@link CborEncoderHalfPrecisionTest} instance.
      */
-    public CborOutputStreamHalfPrecisionTest(float input, int[] encodedOutput) {
+    public CborEncoderHalfPrecisionTest(float input, int[] encodedOutput) {
         super(input, encodedOutput);
     }
 

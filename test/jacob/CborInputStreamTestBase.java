@@ -12,7 +12,7 @@ import java.io.ByteArrayInputStream;
 import org.junit.Assert;
 
 /**
- * Base class for all {@link CborOutputStream} test cases.
+ * Base class for all {@link CborEncoder} test cases.
  */
 public class CborInputStreamTestBase<T> {
     protected static final Exception NONE = null;
