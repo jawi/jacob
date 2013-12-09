@@ -16,7 +16,7 @@ are supported by this implementation.
 
 ## To do
 
-- [ ] add support for encoding/decoding semantic tags;
+- [x] add support for encoding/decoding semantic tags;
 - [ ] add better support for decoding unlimited arrays, strings and maps;
 - [ ] provide a "lazy"/"chunked" decoder API;
 - [ ] provide an event-like API, similar as to StAX;
