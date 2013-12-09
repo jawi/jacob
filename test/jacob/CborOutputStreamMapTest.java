@@ -11,10 +11,10 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -76,17 +76,26 @@ public class CborOutputStreamMapTest extends CborOutputStreamTestBase<Object> {
     }
 
     @Test
-    @SuppressWarnings("unchecked")
     public void testEncodeInput() throws IOException {
-        if (m_input == null || m_input instanceof Map<?, ?>) {
-            m_stream.writeMap((Map<?, ?>) m_input);
-        } else if (m_input instanceof Iterable<?>) {
-            m_stream.writeMap((Iterable<Map.Entry<?, ?>>) m_input);
-        } else {
-            m_stream.writeMap((Iterator<Map.Entry<?, ?>>) m_input);
-        }
+        encodeInputData();
 
         assertStreamContentsIsExpected();
+    }
+
+    private void encodeInputData() throws IOException {
+        if (m_input == null) {
+            m_stream.writeMapStart(0);
+        } else if (m_input instanceof Map<?, ?>) {
+            writeGenericItem(m_input);
+        } else if (m_input instanceof Iterable<?>) {
+            m_stream.writeMapStart();
+            for (Object o : (Iterable<?>) m_input) {
+                Map.Entry<?, ?> entry = (Entry<?, ?>) o;
+                writeGenericItem(entry.getKey());
+                writeGenericItem(entry.getValue());
+            }
+            m_stream.writeBreak();
+        }
     }
 
     static class IntMapEntry implements Map.Entry<Integer, Integer> {

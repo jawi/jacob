@@ -7,15 +7,26 @@
  */
 package jacob;
 
-import static jacob.CborConstants.*;
-import static jacob.CborType.*;
+import static jacob.CborConstants.BREAK;
+import static jacob.CborConstants.EIGHT_BYTES;
+import static jacob.CborConstants.FALSE;
+import static jacob.CborConstants.FOUR_BYTES;
+import static jacob.CborConstants.NULL;
+import static jacob.CborConstants.ONE_BYTE;
+import static jacob.CborConstants.TRUE;
+import static jacob.CborConstants.TWO_BYTES;
+import static jacob.CborConstants.UNDEFINED;
+import static jacob.CborType.ARRAY;
+import static jacob.CborType.BYTE_STRING;
+import static jacob.CborType.FLOAT_SIMPLE;
+import static jacob.CborType.MAP;
+import static jacob.CborType.NEGATIVE_INTEGER;
+import static jacob.CborType.TAG;
+import static jacob.CborType.TEXT_STRING;
 
 import java.io.FilterOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.lang.reflect.Array;
-import java.util.Iterator;
-import java.util.Map;
 
 /**
  * Provides an {@link OutputStream} capable of encoding data into CBOR format.
@@ -71,51 +82,6 @@ public class CborOutputStream extends FilterOutputStream {
     }
 
     /**
-     * Writes an "indefinite" generic array value in canonical CBOR format.
-     * <p>
-     * Note that string elements are always encoded in UTF8 format.
-     * </p>
-     * 
-     * @param value the array to write, can be <code>null</code> in which an array with length <tt>0</tt> is written.
-     * @throws IOException in case of I/O problems writing the CBOR-encoded value to the underlying output stream.
-     */
-    public void writeArray(Iterable<?> value) throws IOException {
-        writeArray((Iterator<?>) (value == null ? null : value.iterator()));
-    }
-
-    /**
-     * Writes an "indefinite" generic array value in canonical CBOR format.
-     * <p>
-     * Note that string elements are always encoded in UTF8 format.
-     * </p>
-     * 
-     * @param value the array to write, can be <code>null</code> in which an array with length <tt>0</tt> is written.
-     * @throws IOException in case of I/O problems writing the CBOR-encoded value to the underlying output stream.
-     */
-    public void writeArray(Iterator<?> value) throws IOException {
-        write(ARRAY.encode(BREAK));
-        if (value != null) {
-            while (value.hasNext()) {
-                writeGenericItem(value.next());
-            }
-        }
-        writeBreak();
-    }
-
-    /**
-     * Writes a generic array value in canonical CBOR format.
-     * <p>
-     * Note that string elements are always encoded in UTF8 format.
-     * </p>
-     * 
-     * @param value the array to write, can be <code>null</code> in which an array with length <tt>0</tt> is written.
-     * @throws IOException in case of I/O problems writing the CBOR-encoded value to the underlying output stream.
-     */
-    public void writeArray(Object[] value) throws IOException {
-        writeArray(value, (value == null) ? 0 : value.length);
-    }
-
-    /**
      * Writes the start of an indefinite-length array.
      * <p>
      * After calling this method, one is expected to write the given number of array elements, which can be of any type. No length checks are performed.<br/>
@@ -129,7 +95,7 @@ public class CborOutputStream extends FilterOutputStream {
     }
 
     /**
-     * Writes the start of a finite-length array.
+     * Writes the start of a definite-length array.
      * <p>
      * After calling this method, one is expected to write the given number of array elements, which can be of any type. No length checks are performed.
      * </p>
@@ -309,60 +275,6 @@ public class CborOutputStream extends FilterOutputStream {
     }
 
     /**
-     * Writes an "indefinite" generic array value in canonical CBOR format.
-     * <p>
-     * Note that string keys and/or values are encoded in UTF8 format.
-     * </p>
-     * 
-     * @param value the map entries to write, can be <code>null</code> in which an array with length <tt>0</tt> is written.
-     * @throws IOException in case of I/O problems writing the CBOR-encoded value to the underlying output stream.
-     */
-    public void writeMap(Iterable<Map.Entry<?, ?>> value) throws IOException {
-        writeMap((Iterator<Map.Entry<?, ?>>) (value == null ? null : value.iterator()));
-    }
-
-    /**
-     * Writes an "indefinite" generic array value in canonical CBOR format.
-     * <p>
-     * Note that string keys and/or values are encoded in UTF8 format.
-     * </p>
-     * 
-     * @param value the map entries to write, can be <code>null</code> in which an array with length <tt>0</tt> is written.
-     * @throws IOException in case of I/O problems writing the CBOR-encoded value to the underlying output stream.
-     */
-    public void writeMap(Iterator<Map.Entry<?, ?>> value) throws IOException {
-        write(MAP.encode(BREAK));
-        if (value != null) {
-            while (value.hasNext()) {
-                Map.Entry<?, ?> entry = value.next();
-                writeGenericItem(entry.getKey());
-                writeGenericItem(entry.getValue());
-            }
-        }
-        writeBreak();
-    }
-
-    /**
-     * Writes a generic array value in canonical CBOR format.
-     * <p>
-     * Note that string keys and/or values are encoded in UTF8 format.
-     * </p>
-     * 
-     * @param value the map to write, can be <code>null</code> in which an array with length <tt>0</tt> is written.
-     * @throws IOException in case of I/O problems writing the CBOR-encoded value to the underlying output stream.
-     */
-    public void writeMap(Map<?, ?> value) throws IOException {
-        int len = (value == null) ? 0 : value.size();
-        writeType(MAP, len);
-        if (value != null) {
-            for (Map.Entry<?, ?> entry : value.entrySet()) {
-                writeGenericItem(entry.getKey());
-                writeGenericItem(entry.getValue());
-            }
-        }
-    }
-
-    /**
      * Writes the start of an indefinite-length map.
      * <p>
      * After calling this method, one is expected to write any number of map entries, as separate key and value. Keys and values can both be of any type. No length checks are performed.<br/>
@@ -433,37 +345,15 @@ public class CborOutputStream extends FilterOutputStream {
     /**
      * Writes a semantic tag in canonical CBOR format.
      * 
-     * @param tag the tag to write, should &gt;= 0;
-     * @param data the tagged data to write, can be <code>null</code>.
+     * @param tag the tag to write, should &gt;= 0.
      * @throws IllegalArgumentException in case the given tag was negative;
      * @throws IOException in case of I/O problems writing the CBOR-encoded value to the underlying output stream.
      */
-    public void writeTag(int tag, Object data) throws IOException {
+    public void writeTag(long tag) throws IOException {
         if (tag < 0) {
             throw new IllegalArgumentException("Invalid tag specification, cannot be negative!");
         }
         writeType(TAG, tag);
-
-        // XXX note sure whether this is the right place...
-        switch (tag) {
-            case 0:
-            case 32:
-            case 33:
-            case 34:
-            case 35:
-            case 36:
-                writeTextString(String.valueOf(data));
-                break;
-            case 2:
-            case 3:
-            case 23:
-            case 24:
-                writeByteString(String.valueOf(data));
-                break;
-            default:
-                writeGenericItem(data);
-                break;
-        }
     }
 
     /**
@@ -500,56 +390,6 @@ public class CborOutputStream extends FilterOutputStream {
      */
     public void writeUndefined() throws IOException {
         write(FLOAT_SIMPLE.encode(UNDEFINED));
-    }
-
-    /**
-     * Writes a generic array value in canonical CBOR format.
-     * 
-     * @param array the array to write, can be <code>null</code> in which an array with length <tt>0</tt> is written;
-     * @param length the number of elements in the array, >= 0.
-     * @throws IOException in case of I/O problems writing the CBOR-encoded value to the underlying output stream.
-     */
-    protected void writeArray(Object array, int length) throws IOException {
-        writeType(ARRAY, length);
-        for (int i = 0; i < length; i++) {
-            Object item = Array.get(array, i);
-            writeGenericItem(item);
-        }
-    }
-
-    /**
-     * Writes any given item in CBOR-encoded format by introspecting its type.
-     * 
-     * @param item the item to write, can be <code>null</code> in which case a {@link CborConstants#NULL} value is written.
-     * @throws IOException in case of I/O problems writing the CBOR-encoded value to the underlying output stream.
-     */
-    protected void writeGenericItem(Object item) throws IOException {
-        if (item instanceof Number) {
-            Number num = (Number) item;
-            if (item instanceof Double) {
-                writeDouble(num.doubleValue());
-            } else if (item instanceof Float) {
-                writeFloat(num.floatValue());
-            } else {
-                writeInt(num.longValue());
-            }
-        } else if (item instanceof String) {
-            writeTextString((String) item);
-        } else if (item instanceof Boolean) {
-            writeBoolean((Boolean) item);
-        } else if (item instanceof Map) {
-            writeMap((Map<?, ?>) item);
-        } else if (item != null) {
-            Class<?> type = item.getClass();
-            if (type.isArray()) {
-                writeArray(item, Array.getLength(item));
-            } else {
-                // XXX Tags...
-                throw new IOException("Unknown/unhandled component type: " + type);
-            }
-        } else {
-            writeNull();
-        }
     }
 
     /**

@@ -9,10 +9,14 @@ package jacob;
 
 import java.io.ByteArrayInputStream;
 
+import org.junit.Assert;
+
 /**
  * Base class for all {@link CborOutputStream} test cases.
  */
 public class CborInputStreamTestBase<T> {
+    protected static final Exception NONE = null;
+
     protected final T m_expectedOutput;
     protected final CborInputStream m_stream;
 
@@ -28,5 +32,17 @@ public class CborInputStreamTestBase<T> {
 
         m_bais = new ByteArrayInputStream(buf);
         m_stream = new CborInputStream(m_bais);
+    }
+
+    protected static void fail(Class<? extends Exception> expectedType) {
+        Assert.fail("Exception " + expectedType.getSimpleName() + " expected!");
+    }
+
+    protected static void assertException(Class<? extends Exception> expectedType, Exception actual) {
+        Assert.assertNotNull("Exception " + expectedType.getSimpleName() + " expected, got null!", actual);
+
+        Class<? extends Exception> actualType = actual.getClass();
+        Assert.assertTrue("Exception " + expectedType.getSimpleName() + " expected, got " + actualType.getSimpleName(),
+            expectedType.isAssignableFrom(actualType));
     }
 }

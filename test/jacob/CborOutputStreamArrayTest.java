@@ -49,12 +49,26 @@ public class CborOutputStreamArrayTest extends CborOutputStreamTestBase<Object> 
 
     @Test
     public void testEncodeInput() throws IOException {
-        if (m_input instanceof Iterable<?>) {
-            m_stream.writeArray((Iterable<?>) m_input);
-        } else {
-            m_stream.writeArray((Object[]) m_input);
-        }
+        encodeInputData();
 
         assertStreamContentsIsExpected();
+    }
+
+    private void encodeInputData() throws IOException {
+        if (m_input == null) {
+            m_stream.writeArrayStart(0);
+        } else if (m_input.getClass().isArray()) {
+            int length = ((Object[]) m_input).length;
+            m_stream.writeArrayStart(length);
+            for (Object i : (Object[]) m_input) {
+                writeGenericItem(i);
+            }
+        } else {
+            m_stream.writeArrayStart();
+            for (Object i : (Iterable<?>) m_input) {
+                writeGenericItem(i);
+            }
+            m_stream.writeBreak();
+        }
     }
 }

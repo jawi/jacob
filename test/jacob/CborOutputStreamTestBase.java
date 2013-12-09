@@ -10,6 +10,9 @@ package jacob;
 import static org.junit.Assert.fail;
 
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.lang.reflect.Array;
+import java.util.Map;
 
 /**
  * Base class for all {@link CborOutputStream} test cases.
@@ -27,6 +30,49 @@ public class CborOutputStreamTestBase<T> {
 
         m_baos = new ByteArrayOutputStream();
         m_stream = new CborOutputStream(m_baos);
+    }
+
+    /**
+     * Writes any given item in CBOR-encoded format by introspecting its type.
+     * 
+     * @param item the item to write, can be <code>null</code> in which case a {@link CborConstants#NULL} value is written.
+     * @throws IOException in case of I/O problems writing the CBOR-encoded value to the underlying output stream.
+     */
+    protected void writeGenericItem(Object item) throws IOException {
+        if (item instanceof Number) {
+            Number num = (Number) item;
+            if (item instanceof Double) {
+                m_stream.writeDouble(num.doubleValue());
+            } else if (item instanceof Float) {
+                m_stream.writeFloat(num.floatValue());
+            } else {
+                m_stream.writeInt(num.longValue());
+            }
+        } else if (item instanceof String) {
+            m_stream.writeTextString((String) item);
+        } else if (item instanceof Boolean) {
+            m_stream.writeBoolean((Boolean) item);
+        } else if (item instanceof Map) {
+            Map<?, ?> map = (Map<?, ?>) item;
+            m_stream.writeMapStart(map.size());
+            for (Map.Entry<?, ?> entry : map.entrySet()) {
+                writeGenericItem(entry.getKey());
+                writeGenericItem(entry.getValue());
+            }
+        } else if (item != null) {
+            Class<?> type = item.getClass();
+            if (type.isArray()) {
+                int len = Array.getLength(item);
+                m_stream.writeArrayStart(len);
+                for (int i = 0; i < len; i++) {
+                    writeGenericItem(Array.get(item, i));
+                }
+            } else {
+                throw new IOException("Unknown/unhandled component type: " + type);
+            }
+        } else {
+            m_stream.writeNull();
+        }
     }
 
     protected void assertStreamContentsIsExpected() {

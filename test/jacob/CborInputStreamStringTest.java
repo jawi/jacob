@@ -57,9 +57,9 @@ public class CborInputStreamStringTest extends CborInputStreamTestBase<String> {
     public void test() throws IOException {
         String read = null;
         if (m_utf8) {
-            read = m_stream.readUTF8String();
+            read = m_stream.readTextString();
         } else {
-            read = new String(m_stream.readString());
+            read = new String(m_stream.readByteString());
         }
 
         assertEquals(m_expectedOutput, read);
