@@ -7,7 +7,7 @@
  */
 package jacob;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -21,13 +21,10 @@ import org.junit.runners.Parameterized.Parameters;
  * Test cases for decoding data in the CBOR format.
  */
 @RunWith(Parameterized.class)
-public class CborInputStreamInt16Test extends CborInputStreamTestBase<Integer> {
-    private final Class<? extends Exception> m_exceptionClass;
-
-    public CborInputStreamInt16Test(int output, int[] encodedInput, Class<? extends Exception> exceptionType) {
-        super(encodedInput, output);
-
-        m_exceptionClass = exceptionType;
+public class CborDecoderInt16Test extends CborDecoderTestBase<Integer> {
+    
+    public CborDecoderInt16Test(int output, int[] encodedInput, Class<? extends Exception> exceptionType) {
+        super(encodedInput, output, exceptionType);
     }
 
     @Parameters(name = "{index}: decoding 16-bit integer {0}")
@@ -53,17 +50,7 @@ public class CborInputStreamInt16Test extends CborInputStreamTestBase<Integer> {
 
     @Test
     public void test() throws IOException {
-        if (m_exceptionClass == null) {
-            assertEquals(m_expectedOutput.intValue(), m_stream.readInt16());
-        } else {
-            try {
-                m_stream.readInt16();
-
-                fail(m_exceptionClass);
-            }
-            catch (Exception e) {
-                assertException(m_exceptionClass, e);
-            }
-        }
+        // In case of an exception, a @Rule will be applied...
+        assertEquals(m_expectedOutput.intValue(), m_stream.readInt16());
     }
 }

@@ -21,17 +21,14 @@ import org.junit.runners.Parameterized.Parameters;
  * Test cases for decoding data in the CBOR format.
  */
 @RunWith(Parameterized.class)
-public class CborInputStreamInt64Test extends CborInputStreamTestBase<Long> {
-    private final Class<? extends Exception> m_exceptionClass;
-
-    public CborInputStreamInt64Test(long output, int[] encodedInput, Class<? extends Exception> exceptionType) {
-        super(encodedInput, output);
-
-        m_exceptionClass = exceptionType;
+public class CborDecoderInt64Test extends CborDecoderTestBase<Long> {
+    public CborDecoderInt64Test(long output, int[] encodedInput, Class<? extends Exception> exceptionType) {
+        super(encodedInput, output, exceptionType);
     }
 
     @Parameters(name = "{index}: decoding 64-bit integer {0}")
     public static Iterable<Object[]> getParameters() {
+        // @formatter:off
         return Arrays.asList( //
             new Object[] { 0, new int[] { 0x1b, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }, NONE }, // 0
             new Object[] { 1, new int[] { 0x1b, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01 }, NONE }, // 1
@@ -48,21 +45,12 @@ public class CborInputStreamInt64Test extends CborInputStreamTestBase<Long> {
             new Object[] { 500, new int[] { 0x19, 0x01, 0xf4 }, IOException.class }, // 12
             new Object[] { 0, new int[] { 0x00 }, IOException.class } // 13
             );
+        // @formatter:on
     }
 
     @Test
     public void test() throws IOException {
-        if (m_exceptionClass == null) {
-            assertEquals(m_expectedOutput.longValue(), m_stream.readInt64());
-        } else {
-            try {
-                m_stream.readInt64();
-
-                fail(m_exceptionClass);
-            }
-            catch (Exception e) {
-                assertException(m_exceptionClass, e);
-            }
-        }
+        // In case of an exception, a @Rule will be applied...
+        assertEquals(m_expectedOutput.longValue(), m_stream.readInt64());
     }
 }

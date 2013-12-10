@@ -145,20 +145,6 @@ public class CborEncoder {
     }
 
     /**
-     * Writes a byte string in canonical CBOR-format.
-     * <p>
-     * Note that this method is <em>platform</em> specific, as the given string value will be encoded in a byte array
-     * using the <em>platform</em> encoding! This means that the encoding must be standardized and known.
-     * </p>
-     * 
-     * @param value the byte string to write, can be <code>null</code> in which case a byte-string of length <tt>0</tt> is written.
-     * @throws IOException in case of I/O problems writing the CBOR-encoded value to the underlying output stream.
-     */
-    public void writeByteString(String value) throws IOException {
-        writeString(BYTE_STRING, value == null ? null : value.getBytes());
-    }
-
-    /**
      * Writes the start of an indefinite-length byte string.
      * <p>
      * After calling this method, one is expected to write the given number of string parts. No length checks are performed.<br/>

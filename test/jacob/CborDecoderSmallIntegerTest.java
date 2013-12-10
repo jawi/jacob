@@ -21,17 +21,14 @@ import org.junit.runners.Parameterized.Parameters;
  * Test cases for decoding data in the CBOR format.
  */
 @RunWith(Parameterized.class)
-public class CborInputStreamSmallIntegerTest extends CborInputStreamTestBase<Integer> {
-    private final Class<? extends Exception> m_exceptionClass;
-
-    public CborInputStreamSmallIntegerTest(int output, int[] encodedInput, Class<? extends Exception> exceptionType) {
-        super(encodedInput, output);
-
-        m_exceptionClass = exceptionType;
+public class CborDecoderSmallIntegerTest extends CborDecoderTestBase<Integer> {
+    public CborDecoderSmallIntegerTest(int output, int[] encodedInput, Class<? extends Exception> exceptionType) {
+        super(encodedInput, output, exceptionType);
     }
 
     @Parameters(name = "{index}: decoding small integer {0}")
     public static Iterable<Object[]> getParameters() {
+        // @formatter:off
         return Arrays.asList( //
             new Object[] { 0, new int[] { 0x00 }, NONE }, // 0
             new Object[] { 1, new int[] { 0x01 }, NONE }, // 1
@@ -43,21 +40,12 @@ public class CborInputStreamSmallIntegerTest extends CborInputStreamTestBase<Int
             new Object[] { -24, new int[] { 0x37 }, NONE }, // 7
             new Object[] { -25, new int[] { 0x38, 0x01 }, IOException.class } // 8
             );
+        // @formatter:on
     }
 
     @Test
     public void test() throws IOException {
-        if (m_exceptionClass == null) {
-            assertEquals(m_expectedOutput.intValue(), m_stream.readSmallInt());
-        } else {
-            try {
-                m_stream.readSmallInt();
-
-                fail(m_exceptionClass);
-            }
-            catch (Exception e) {
-                assertException(m_exceptionClass, e);
-            }
-        }
+        // In case of an exception, a @Rule will be applied...
+        assertEquals(m_expectedOutput.intValue(), m_stream.readSmallInt());
     }
 }

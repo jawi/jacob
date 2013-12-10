@@ -13,6 +13,9 @@ import static jacob.CborConstants.TAG_EPOCH_DATE_TIME;
 import static jacob.CborConstants.TAG_EXPECTED_BASE16_ENCODED;
 import static jacob.CborConstants.TAG_STANDARD_DATE_TIME;
 import static jacob.CborConstants.TAG_URI;
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -26,19 +29,19 @@ import org.junit.runners.Parameterized.Parameters;
  * Test cases for encoding data in the CBOR format.
  */
 @RunWith(Parameterized.class)
-public class CborEncoderTagTest extends CborEncoderTestBase<Long> {
+public class CborDecoderTagTest extends CborDecoderTestBase<Long> {
     private final Object m_data;
 
     /**
-     * Creates a new {@link CborEncoderTagTest} instance.
+     * Creates a new {@link CborDecoderTagTest} instance.
      */
-    public CborEncoderTagTest(long type, Object data, int[] encodedOutput) {
-        super(type, encodedOutput);
+    public CborDecoderTagTest(long type, Object data, int[] encodedInput) {
+        super(encodedInput, type);
 
         m_data = data;
     }
 
-    @Parameters(name = "{index}: encoding tag {0},{1}")
+    @Parameters(name = "{index}: decoding tag {0},{1}")
     public static Iterable<Object[]> getParameters() {
         // @formatter:off
         return Arrays.asList( //
@@ -55,15 +58,10 @@ public class CborEncoderTagTest extends CborEncoderTestBase<Long> {
 
     @Test
     public void testEncodeInput() throws IOException {
-        encodeInputData();
+        // In case of an exception, a @Rule will be applied...
+        assertEquals(m_expectedOutput.longValue(), m_stream.readTag());
 
-        assertStreamContentsIsExpected();
-    }
-
-    private void encodeInputData() throws IOException {
-        int tag = m_input.intValue();
-
-        m_stream.writeTag(tag);
+        int tag = m_expectedOutput.intValue();
         switch (tag) {
             case 0:
             case 32:
@@ -71,19 +69,19 @@ public class CborEncoderTagTest extends CborEncoderTestBase<Long> {
             case 34:
             case 35:
             case 36:
-                m_stream.writeTextString(String.valueOf(m_data));
+                assertEquals((String) m_data, m_stream.readTextString());
                 break;
             case 2:
             case 3:
             case 23:
             case 24:
-                m_stream.writeByteString(String.valueOf(m_data).getBytes());
+                assertArrayEquals(((String) m_data).getBytes(), m_stream.readByteString());
                 break;
             case 55799:
-                m_stream.writeNull();
+                assertNull(m_stream.readNull());
                 break;
             default:
-                writeGenericItem(m_data);
+                assertEquals(m_data, readGenericItem());
                 break;
         }
     }

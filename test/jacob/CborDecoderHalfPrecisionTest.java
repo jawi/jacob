@@ -21,9 +21,9 @@ import org.junit.runners.Parameterized.Parameters;
  * Test cases for decoding data in the CBOR format.
  */
 @RunWith(Parameterized.class)
-public class CborInputStreamHalfPrecisionTest extends CborInputStreamTestBase<Double> {
+public class CborDecoderHalfPrecisionTest extends CborDecoderTestBase<Double> {
 
-    public CborInputStreamHalfPrecisionTest(double output, int[] encodedInput) {
+    public CborDecoderHalfPrecisionTest(double output, int[] encodedInput) {
         super(encodedInput, output);
     }
 
@@ -45,6 +45,7 @@ public class CborInputStreamHalfPrecisionTest extends CborInputStreamTestBase<Do
 
     @Test
     public void test() throws IOException {
+        // In case of an exception, a @Rule will be applied...
         assertEquals(m_expectedOutput.doubleValue(), m_stream.readHalfPrecisionFloat(), Double.POSITIVE_INFINITY);
     }
 }

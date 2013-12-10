@@ -21,13 +21,13 @@ import org.junit.runners.Parameterized.Parameters;
  * Test cases for decoding data in the CBOR format.
  */
 @RunWith(Parameterized.class)
-public class CborInputStreamStringTest extends CborInputStreamTestBase<String> {
+public class CborDecoderStringTest extends CborDecoderTestBase<String> {
     private static final boolean PLATFORM_ENCODING = false;
     private static final boolean UTF8_ENCODING = true;
 
     private final boolean m_utf8;
 
-    public CborInputStreamStringTest(String output, int[] encodedInput, boolean utf8) {
+    public CborDecoderStringTest(String output, int[] encodedInput, boolean utf8) {
         super(encodedInput, output);
 
         m_utf8 = utf8;
@@ -55,6 +55,7 @@ public class CborInputStreamStringTest extends CborInputStreamTestBase<String> {
 
     @Test
     public void test() throws IOException {
+        // In case of an exception, a @Rule will be applied...
         String read = null;
         if (m_utf8) {
             read = m_stream.readTextString();

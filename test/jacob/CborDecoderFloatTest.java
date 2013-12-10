@@ -21,9 +21,9 @@ import org.junit.runners.Parameterized.Parameters;
  * Test cases for decoding data in the CBOR format.
  */
 @RunWith(Parameterized.class)
-public class CborInputStreamFloatTest extends CborInputStreamTestBase<Float> {
+public class CborDecoderFloatTest extends CborDecoderTestBase<Float> {
 
-    public CborInputStreamFloatTest(float output, int[] encodedInput) {
+    public CborDecoderFloatTest(float output, int[] encodedInput) {
         super(encodedInput, output);
     }
 
@@ -45,6 +45,7 @@ public class CborInputStreamFloatTest extends CborInputStreamTestBase<Float> {
 
     @Test
     public void test() throws IOException {
+        // In case of an exception, a @Rule will be applied...
         assertEquals(m_expectedOutput.floatValue(), m_stream.readFloat(), Float.POSITIVE_INFINITY);
     }
 }

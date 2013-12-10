@@ -34,7 +34,7 @@ public enum CborType {
     /**
      * Decodes a given initial byte to a {@link CborType} value by looking at the three most-significant bits.
      * 
-     * @param i the input byte to decode into a {@link CborType} instance.
+     * @param i the input byte (8-bit) to decode into a {@link CborType} instance.
      * @return a {@link CborType} instance, never <code>null</code>.
      */
     public static CborType decode(int i) {
@@ -56,5 +56,13 @@ public enum CborType {
      */
     public int bitMask() {
         return (ordinal() << 5);
+    }
+
+    /**
+     * @param i the input byte (8-bit) whose value should be equal to the ordinal value of this major type.
+     * @return <code>true</code> if the given input value matches this major type's ordinal value, <code>false</code> otherwise.
+     */
+    public boolean isSameOrdinal(int i) {
+        return ordinal() == ((i >> 5) & 0x1f);
     }
 }

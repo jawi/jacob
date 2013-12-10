@@ -21,13 +21,10 @@ import org.junit.runners.Parameterized.Parameters;
  * Test cases for decoding data in the CBOR format.
  */
 @RunWith(Parameterized.class)
-public class CborInputStreamInt08Test extends CborInputStreamTestBase<Integer> {
-    private final Class<? extends Exception> m_exceptionClass;
+public class CborDecoderInt08Test extends CborDecoderTestBase<Integer> {
 
-    public CborInputStreamInt08Test(int output, int[] encodedInput, Class<? extends Exception> exceptionType) {
-        super(encodedInput, output);
-
-        m_exceptionClass = exceptionType;
+    public CborDecoderInt08Test(int output, int[] encodedInput, Class<? extends Exception> exceptionType) {
+        super(encodedInput, output, exceptionType);
     }
 
     @Parameters(name = "{index}: decoding 8-bit integer {0}")
@@ -55,17 +52,7 @@ public class CborInputStreamInt08Test extends CborInputStreamTestBase<Integer> {
 
     @Test
     public void test() throws IOException {
-        if (m_exceptionClass == null) {
-            assertEquals(m_expectedOutput.intValue(), m_stream.readInt8());
-        } else {
-            try {
-                m_stream.readInt8();
-
-                fail(m_exceptionClass);
-            }
-            catch (Exception e) {
-                assertException(m_exceptionClass, e);
-            }
-        }
+        // In case of an exception, a @Rule will be applied...
+        assertEquals(m_expectedOutput.intValue(), m_stream.readInt8());
     }
 }

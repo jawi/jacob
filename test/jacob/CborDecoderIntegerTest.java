@@ -21,14 +21,15 @@ import org.junit.runners.Parameterized.Parameters;
  * Test cases for decoding data in the CBOR format.
  */
 @RunWith(Parameterized.class)
-public class CborInputStreamIntegerTest extends CborInputStreamTestBase<Long> {
+public class CborDecoderIntegerTest extends CborDecoderTestBase<Long> {
 
-    public CborInputStreamIntegerTest(long output, int[] encodedInput) {
+    public CborDecoderIntegerTest(long output, int[] encodedInput) {
         super(encodedInput, output);
     }
 
     @Parameters(name = "{index}: decoding integer {0}")
     public static Iterable<Object[]> getParameters() {
+        // @formatter:off
         return Arrays.asList( //
             new Object[] { 0, new int[] { 0x00 } }, // 0
             new Object[] { 1, new int[] { 0x01 } }, // 1
@@ -53,10 +54,12 @@ public class CborInputStreamIntegerTest extends CborInputStreamTestBase<Long> {
             new Object[] { Long.MAX_VALUE, new int[] { 0x1b, 0x7f, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff } }, // 20
             new Object[] { Long.MIN_VALUE, new int[] { 0x3b, 0x7f, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff } } // 21
             );
+        // @formatter:on
     }
 
     @Test
     public void test() throws IOException {
+        // In case of an exception, a @Rule will be applied...
         assertEquals(m_expectedOutput.longValue(), m_stream.readInt());
     }
 }

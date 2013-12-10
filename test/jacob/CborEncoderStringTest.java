@@ -62,7 +62,7 @@ public class CborEncoderStringTest extends CborEncoderTestBase<String> {
         if (m_utf8) {
             m_stream.writeTextString(m_input);
         } else {
-            m_stream.writeByteString(m_input);
+            m_stream.writeByteString(m_input.getBytes());
         }
 
         assertStreamContentsIsExpected();
