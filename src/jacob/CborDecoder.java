@@ -91,6 +91,9 @@ public class CborDecoder {
      */
     public byte[] readByteString() throws IOException {
         long len = readMajorTypeWithSize(BYTE_STRING);
+        if (len < 0) {
+            fail("Infinite-length byte strings not supported!");
+        }
         if (len > Integer.MAX_VALUE) {
             fail("String length too long!");
         }
@@ -170,7 +173,7 @@ public class CborDecoder {
         // in case of negative integers, extends the sign to all bits; otherwise zero...
         long ui = expectIntegerType(ib);
         // in case of negative integers does a ones complement
-        return ui ^ readUInt(ib & 0x1f);
+        return ui ^ readUInt(ib & 0x1f, false /* breakAllowed */);
     }
 
     /**
@@ -287,7 +290,7 @@ public class CborDecoder {
      * @throws IOException in case of I/O problems reading the CBOR-encoded value from the underlying input stream.
      */
     public long readTag() throws IOException {
-        return readUInt(readMajorType(TAG));
+        return readUInt(readMajorType(TAG), false /* breakAllowed */);
     }
 
     /**
@@ -298,6 +301,9 @@ public class CborDecoder {
      */
     public String readTextString() throws IOException {
         long len = readMajorTypeWithSize(TEXT_STRING);
+        if (len < 0) {
+            fail("Infinite-length text strings not supported!");
+        }
         if (len > Integer.MAX_VALUE) {
             fail("String length too long!");
         }
@@ -373,40 +379,11 @@ public class CborDecoder {
      * Reads the next major type from the underlying input stream, verifies whether it matches the given expectation, and decodes the payload into a size.
      * 
      * @param majorType the expected major type, cannot be <code>null</code> (unchecked).
-     * @return the number of succeeding bytes, &gt;= 0.
+     * @return the number of succeeding bytes, &gt;= 0, or <tt>-1</tt> if an infinite-length type is read.
      * @throws IOException in case of I/O problems reading the CBOR-encoded value from the underlying input stream.
      */
     protected long readMajorTypeWithSize(CborType majorType) throws IOException {
-        return readSize(readMajorType(majorType));
-    }
-
-    /**
-     * Reads an unsigned integer with a given length-indicator.
-     * 
-     * @param length the length indicator to use;
-     * @return the read unsigned integer, as long value. Returns <tt>-1L</tt> if the given length was {@link CborConstants#BREAK}.
-     * @throws IOException in case of I/O problems reading the unsigned integer from the underlying input stream.
-     */
-    protected long readSize(int length) throws IOException {
-        long result = -1;
-        if (length < ONE_BYTE) {
-            return length;
-        } else if (length == ONE_BYTE) {
-            result = readUInt8();
-        } else if (length == TWO_BYTES) {
-            result = readUInt16();
-        } else if (length == FOUR_BYTES) {
-            result = readUInt32();
-        } else if (length == EIGHT_BYTES) {
-            result = readUInt64();
-        } else if (length == BREAK) {
-            return -1;
-        }
-
-        if (result < 0) {
-            fail("Not well-formed CBOR integer found, invalid length: %d!", result);
-        }
-        return result;
+        return readUInt(readMajorType(majorType), true /* breakAllowed */);
     }
 
     /**
@@ -416,21 +393,25 @@ public class CborDecoder {
      * @return the read unsigned integer, as long value.
      * @throws IOException in case of I/O problems reading the unsigned integer from the underlying input stream.
      */
-    protected long readUInt(int length) throws IOException {
+    protected long readUInt(int length, boolean breakAllowed) throws IOException {
+        long result = -1;
         if (length < ONE_BYTE) {
-            return length;
+            result = length;
         } else if (length == ONE_BYTE) {
-            return readUInt8();
+            result = readUInt8();
         } else if (length == TWO_BYTES) {
-            return readUInt16();
+            result = readUInt16();
         } else if (length == FOUR_BYTES) {
-            return readUInt32();
+            result = readUInt32();
         } else if (length == EIGHT_BYTES) {
-            return readUInt64();
+            result = readUInt64();
+        } else if (breakAllowed && length == BREAK) {
+            return -1;
         }
-
-        fail("Not well-formed CBOR integer found, invalid length: %d!", length);
-        return -1L; // never reached...
+        if (result < 0) {
+            fail("Not well-formed CBOR integer found, invalid length: %d!", result);
+        }
+        return result;
     }
 
     /**
@@ -489,7 +470,7 @@ public class CborDecoder {
             fail("Unexpected payload/length! Expected %s, but got %s.", lengthToString(expectedLength),
                 lengthToString(length));
         }
-        return readUInt(length);
+        return readUInt(length, false /* breakAllowed */);
     }
 
     private byte[] readFully(byte[] buf) throws IOException {
