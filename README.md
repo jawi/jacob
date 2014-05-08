@@ -5,8 +5,7 @@ CBOR specification, RFC 7049.
 
 ## Supported types
 
-Almost all major types as defined by CBOR are supported, apart from major type
-6: semantic tags.
+All major types as defined by CBOR are supported.
 
 ## Supported values
 
