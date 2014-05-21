@@ -6,25 +6,18 @@
 package jacob;
 
 import static jacob.CborConstants.*;
-import static jacob.CborType.ARRAY;
-import static jacob.CborType.BYTE_STRING;
-import static jacob.CborType.FLOAT_SIMPLE;
-import static jacob.CborType.MAP;
-import static jacob.CborType.NEGATIVE_INTEGER;
-import static jacob.CborType.TAG;
-import static jacob.CborType.TEXT_STRING;
-import static jacob.CborType.UNSIGNED_INTEGER;
-import static jacob.CborType.decode;
+import static jacob.CborType.*;
 
 import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.PushbackInputStream;
 
 /**
  * Provides a decoder capable of handling CBOR encoded data from a {@link InputStream}.
  */
 public class CborDecoder {
-    private final InputStream m_is;
+    protected final PushbackInputStream m_is;
 
     /**
      * Creates a new {@link CborDecoder} instance.
@@ -35,7 +28,7 @@ public class CborDecoder {
         if (is == null) {
             throw new IllegalArgumentException("InputStream cannot be null!");
         }
-        m_is = is;
+        m_is = (is instanceof PushbackInputStream) ? (PushbackInputStream) is : new PushbackInputStream(is);
     }
 
     private static void fail(String msg, Object... args) throws IOException {
@@ -48,13 +41,29 @@ public class CborDecoder {
     }
 
     /**
+     * Peeks in the input stream for the upcoming type.
+     * 
+     * @return the upcoming type in the stream, or <code>null</code> in case of an end-of-stream.
+     * @throws IOException in case of I/O problems reading the CBOR-type from the underlying input stream.
+     */
+    public CborType peekType() throws IOException {
+        int p = m_is.read();
+        if (p < 0) {
+            // EOF, nothing to peek at...
+            return null;
+        }
+        m_is.unread(p);
+        return valueOf(p);
+    }
+
+    /**
      * Prolog to reading an array value in CBOR format.
      * 
      * @return the number of elements in the array to read, or <tt>-1</tt> in case of infinite-length arrays.
      * @throws IOException in case of I/O problems reading the CBOR-encoded value from the underlying input stream.
      */
     public long readArrayLength() throws IOException {
-        return readMajorTypeWithSize(ARRAY);
+        return readMajorTypeWithSize(TYPE_ARRAY);
     }
 
     /**
@@ -64,7 +73,7 @@ public class CborDecoder {
      * @throws IOException in case of I/O problems reading the CBOR-encoded value from the underlying input stream.
      */
     public boolean readBoolean() throws IOException {
-        int b = readMajorType(FLOAT_SIMPLE);
+        int b = readMajorType(TYPE_FLOAT_SIMPLE);
         if (b != FALSE && b != TRUE) {
             fail("Unexpected boolean value: %d!", b);
         }
@@ -78,7 +87,7 @@ public class CborDecoder {
      * @throws IOException in case of I/O problems reading the CBOR-encoded value from the underlying input stream.
      */
     public Object readBreak() throws IOException {
-        readMajorTypeExact(FLOAT_SIMPLE, BREAK);
+        readMajorTypeExact(TYPE_FLOAT_SIMPLE, BREAK);
 
         return null;
     }
@@ -90,7 +99,7 @@ public class CborDecoder {
      * @throws IOException in case of I/O problems reading the CBOR-encoded value from the underlying input stream.
      */
     public byte[] readByteString() throws IOException {
-        long len = readMajorTypeWithSize(BYTE_STRING);
+        long len = readMajorTypeWithSize(TYPE_BYTE_STRING);
         if (len < 0) {
             fail("Infinite-length byte strings not supported!");
         }
@@ -107,7 +116,7 @@ public class CborDecoder {
      * @throws IOException in case of I/O problems reading the CBOR-encoded value from the underlying input stream.
      */
     public long readByteStringLength() throws IOException {
-        return readMajorTypeWithSize(BYTE_STRING);
+        return readMajorTypeWithSize(TYPE_BYTE_STRING);
     }
 
     /**
@@ -117,7 +126,7 @@ public class CborDecoder {
      * @throws IOException in case of I/O problems reading the CBOR-encoded value from the underlying input stream.
      */
     public double readDouble() throws IOException {
-        readMajorTypeExact(FLOAT_SIMPLE, DOUBLE_PRECISION_FLOAT);
+        readMajorTypeExact(TYPE_FLOAT_SIMPLE, DOUBLE_PRECISION_FLOAT);
 
         return Double.longBitsToDouble(readUInt64());
     }
@@ -129,7 +138,7 @@ public class CborDecoder {
      * @throws IOException in case of I/O problems reading the CBOR-encoded value from the underlying input stream.
      */
     public float readFloat() throws IOException {
-        readMajorTypeExact(FLOAT_SIMPLE, SINGLE_PRECISION_FLOAT);
+        readMajorTypeExact(TYPE_FLOAT_SIMPLE, SINGLE_PRECISION_FLOAT);
 
         return Float.intBitsToFloat((int) readUInt32());
     }
@@ -141,7 +150,7 @@ public class CborDecoder {
      * @throws IOException in case of I/O problems reading the CBOR-encoded value from the underlying input stream.
      */
     public double readHalfPrecisionFloat() throws IOException {
-        readMajorTypeExact(FLOAT_SIMPLE, HALF_PRECISION_FLOAT);
+        readMajorTypeExact(TYPE_FLOAT_SIMPLE, HALF_PRECISION_FLOAT);
 
         int half = readUInt16();
         int exp = (half >> 10) & 0x1f;
@@ -243,7 +252,7 @@ public class CborDecoder {
      * @throws IOException in case of I/O problems reading the CBOR-encoded value from the underlying input stream.
      */
     public long readMapLength() throws IOException {
-        return readMajorTypeWithSize(MAP);
+        return readMajorTypeWithSize(TYPE_MAP);
     }
 
     /**
@@ -253,7 +262,7 @@ public class CborDecoder {
      * @throws IOException in case of I/O problems reading the CBOR-encoded value from the underlying input stream.
      */
     public Object readNull() throws IOException {
-        readMajorTypeExact(FLOAT_SIMPLE, NULL);
+        readMajorTypeExact(TYPE_FLOAT_SIMPLE, NULL);
         return null;
     }
 
@@ -264,7 +273,7 @@ public class CborDecoder {
      * @throws IOException in case of I/O problems reading the CBOR-encoded value from the underlying input stream.
      */
     public byte readSimpleValue() throws IOException {
-        readMajorTypeExact(FLOAT_SIMPLE, ONE_BYTE);
+        readMajorTypeExact(TYPE_FLOAT_SIMPLE, ONE_BYTE);
         return (byte) readUInt8();
     }
 
@@ -290,7 +299,7 @@ public class CborDecoder {
      * @throws IOException in case of I/O problems reading the CBOR-encoded value from the underlying input stream.
      */
     public long readTag() throws IOException {
-        return readUInt(readMajorType(TAG), false /* breakAllowed */);
+        return readUInt(readMajorType(TYPE_TAG), false /* breakAllowed */);
     }
 
     /**
@@ -300,7 +309,7 @@ public class CborDecoder {
      * @throws IOException in case of I/O problems reading the CBOR-encoded value from the underlying input stream.
      */
     public String readTextString() throws IOException {
-        long len = readMajorTypeWithSize(TEXT_STRING);
+        long len = readMajorTypeWithSize(TYPE_TEXT_STRING);
         if (len < 0) {
             fail("Infinite-length text strings not supported!");
         }
@@ -317,7 +326,7 @@ public class CborDecoder {
      * @throws IOException in case of I/O problems reading the CBOR-encoded value from the underlying input stream.
      */
     public long readTextStringLength() throws IOException {
-        return readMajorTypeWithSize(TEXT_STRING);
+        return readMajorTypeWithSize(TYPE_TEXT_STRING);
     }
 
     /**
@@ -327,7 +336,7 @@ public class CborDecoder {
      * @throws IOException in case of I/O problems reading the CBOR-encoded value from the underlying input stream.
      */
     public Object readUndefined() throws IOException {
-        readMajorTypeExact(FLOAT_SIMPLE, UNDEFINED);
+        readMajorTypeExact(TYPE_FLOAT_SIMPLE, UNDEFINED);
         return null;
     }
 
@@ -339,11 +348,12 @@ public class CborDecoder {
      * @throws IOException in case of I/O problems reading the CBOR-encoded value from the underlying input stream.
      */
     protected long expectIntegerType(int ib) throws IOException {
-        CborType majorType = decode(ib);
-        if ((majorType != UNSIGNED_INTEGER) && (majorType != NEGATIVE_INTEGER)) {
-            fail("Unexpected type: %s, expected type %s or %s!", majorType, UNSIGNED_INTEGER, NEGATIVE_INTEGER);
+        int majorType = ((ib & 0xFF) >>> 5);
+        if ((majorType != TYPE_UNSIGNED_INTEGER) && (majorType != TYPE_NEGATIVE_INTEGER)) {
+            fail("Unexpected type: %s, expected type %s or %s!", getName(majorType), getName(TYPE_UNSIGNED_INTEGER),
+                getName(TYPE_NEGATIVE_INTEGER));
         }
-        return -majorType.ordinal();
+        return -majorType;
     }
 
     /**
@@ -353,10 +363,10 @@ public class CborDecoder {
      * @return the read subtype, or payload, of the read major type.
      * @throws IOException in case of I/O problems reading the CBOR-encoded value from the underlying input stream.
      */
-    protected int readMajorType(CborType majorType) throws IOException {
+    protected int readMajorType(int majorType) throws IOException {
         int ib = m_is.read();
-        if (!majorType.isSameOrdinal(ib)) {
-            fail("Unexpected type: %s, expected: %s!", decode(ib), majorType);
+        if (majorType != ((ib >>> 5) & 0x07)) {
+            fail("Unexpected type: %s, expected: %s!", getName(ib), getName(majorType));
         }
         return ib & 0x1F;
     }
@@ -368,7 +378,7 @@ public class CborDecoder {
      * @param subtype the expected subtype.
      * @throws IOException in case of I/O problems reading the CBOR-encoded value from the underlying input stream.
      */
-    protected void readMajorTypeExact(CborType majorType, int subtype) throws IOException {
+    protected void readMajorTypeExact(int majorType, int subtype) throws IOException {
         int st = readMajorType(majorType);
         if ((st ^ subtype) != 0) {
             fail("Unexpected subtype: %d, expected: %d!", st, subtype);
@@ -382,7 +392,7 @@ public class CborDecoder {
      * @return the number of succeeding bytes, &gt;= 0, or <tt>-1</tt> if an infinite-length type is read.
      * @throws IOException in case of I/O problems reading the CBOR-encoded value from the underlying input stream.
      */
-    protected long readMajorTypeWithSize(CborType majorType) throws IOException {
+    protected long readMajorTypeWithSize(int majorType) throws IOException {
         return readUInt(readMajorType(majorType), true /* breakAllowed */);
     }
 

@@ -7,62 +7,136 @@
  */
 package jacob;
 
+import static jacob.CborConstants.*;
+
 /**
- * Represents the various major types in CBOR.
+ * Represents the various major types in CBOR, along with their .
  * <p>
- * The major type is encoded in the upper three bits of each initial byte.
+ * The major type is encoded in the upper three bits of each initial byte. The lower 5 bytes represent any additional information.
  * </p>
  */
-public enum CborType {
-    /** Major type 0: unsigned integers. */
-    UNSIGNED_INTEGER,
-    /** Major type 1: negative integers. */
-    NEGATIVE_INTEGER,
-    /** Major type 2: byte string. */
-    BYTE_STRING,
-    /** Major type 3: text/UTF8 string. */
-    TEXT_STRING,
-    /** Major type 4: array of items. */
-    ARRAY,
-    /** Major type 5: map of pairs. */
-    MAP,
-    /** Major type 6: semantic tags. */
-    TAG,
-    /** Major type 7: floating point, simple data types. */
-    FLOAT_SIMPLE;
+public class CborType {
+    private final int m_major;
+    private final int m_additional;
+
+    private CborType(int major, int additional) {
+        m_major = major;
+        m_additional = additional;
+    }
 
     /**
-     * Decodes a given initial byte to a {@link CborType} value by looking at the three most-significant bits.
+     * Returns a descriptive string for the given major type.
+     * 
+     * @param mt the major type to return as string, values from [0..7] are supported.
+     * @return the name of the given major type, as String, never <code>null</code>.
+     * @throws IllegalArgumentException in case the given major type is not supported.
+     */
+    public static String getName(int mt) {
+        switch (mt) {
+            case TYPE_ARRAY:
+                return "array";
+            case TYPE_BYTE_STRING:
+                return "byte string";
+            case TYPE_FLOAT_SIMPLE:
+                return "float/simple value";
+            case TYPE_MAP:
+                return "map";
+            case TYPE_NEGATIVE_INTEGER:
+                return "negative integer";
+            case TYPE_TAG:
+                return "tag";
+            case TYPE_TEXT_STRING:
+                return "text string";
+            case TYPE_UNSIGNED_INTEGER:
+                return "unsigned integer";
+            default:
+                throw new IllegalArgumentException("Invalid major type: " + mt);
+        }
+    }
+
+    /**
+     * Decodes a given byte value to a {@link CborType} value.
      * 
      * @param i the input byte (8-bit) to decode into a {@link CborType} instance.
      * @return a {@link CborType} instance, never <code>null</code>.
      */
-    public static CborType decode(int i) {
-        return values()[i >>> 5];
+    public static CborType valueOf(int i) {
+        return new CborType((i & 0xff) >>> 5, i & 0x1f);
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) {
+            return true;
+        }
+        if (obj == null || getClass() != obj.getClass()) {
+            return false;
+        }
+
+        CborType other = (CborType) obj;
+        return (m_major == other.m_major) && (m_additional == other.m_additional);
     }
 
     /**
-     * Encodes this {@link CborType} into a byte-value with additional information as the lower 5 bits.
+     * @return the additional information of this type, as integer value from [0..31].
+     */
+    public int getAdditionalInfo() {
+        return m_additional;
+    }
+
+    /**
+     * @return the major type, as integer value from [0..7].
+     */
+    public int getMajorType() {
+        return m_major;
+    }
+
+    @Override
+    public int hashCode() {
+        final int prime = 31;
+        int result = 1;
+        result = prime * result + m_additional;
+        result = prime * result + m_major;
+        return result;
+    }
+
+    /**
+     * @return <code>true</code> if this type allows for an infinite-length payload,
+     *         <code>false</code> if only definite-length payloads are allowed.
+     */
+    public boolean isBreakAllowed() {
+        return m_major == TYPE_ARRAY || m_major == TYPE_BYTE_STRING || m_major == TYPE_MAP
+            || m_major == TYPE_TEXT_STRING;
+    }
+
+    /**
+     * Determines whether the major type of a given {@link CborType} equals the major type of this {@link CborType}.
      * 
-     * @param additionalInfo the lower 5 bits to encode.
-     * @return the encoded byte value, 0..255.
+     * @param other the {@link CborType} to compare against, cannot be <code>null</code>.
+     * @return <code>true</code> if the given {@link CborType} is of the same major type as this {@link CborType}, <code>false</code> otherwise.
+     * @throws IllegalArgumentException in case the given argument was <code>null</code>.
      */
-    public int encode(int additionalInfo) {
-        return bitMask() | (additionalInfo & 0x1f);
+    public boolean isEqualType(CborType other) {
+        if (other == null) {
+            throw new IllegalArgumentException("Parameter cannot be null!");
+        }
+        return m_major == other.m_major;
     }
 
     /**
-     * @return the bit mask value of this type.
+     * Determines whether the major type of a given byte value (representing an encoded {@link CborType}) equals the major type of this {@link CborType}.
+     * 
+     * @param encoded the encoded CBOR type to compare.
+     * @return <code>true</code> if the given byte value represents the same major type as this {@link CborType}, <code>false</code> otherwise.
      */
-    public int bitMask() {
-        return (ordinal() << 5);
+    public boolean isEqualType(int encoded) {
+        return m_major == ((encoded & 0xff) >>> 5);
     }
 
-    /**
-     * @param i the input byte (8-bit) whose value should be equal to the ordinal value of this major type.
-     * @return <code>true</code> if the given input value matches this major type's ordinal value, <code>false</code> otherwise.
-     */
-    public boolean isSameOrdinal(int i) {
-        return ordinal() == ((i >> 5) & 0x1f);
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder();
+        sb.append(getName(m_major)).append('(').append(m_additional).append(')');
+        return sb.toString();
     }
 }

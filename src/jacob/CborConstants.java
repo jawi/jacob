@@ -11,6 +11,23 @@ package jacob;
  * Constant values used by the CBOR format.
  */
 public interface CborConstants {
+    /** Major type 0: unsigned integers. */
+    int TYPE_UNSIGNED_INTEGER = 0x00;
+    /** Major type 1: negative integers. */
+    int TYPE_NEGATIVE_INTEGER = 0x01;
+    /** Major type 2: byte string. */
+    int TYPE_BYTE_STRING = 0x02;
+    /** Major type 3: text/UTF8 string. */
+    int TYPE_TEXT_STRING = 0x03;
+    /** Major type 4: array of items. */
+    int TYPE_ARRAY = 0x04;
+    /** Major type 5: map of pairs. */
+    int TYPE_MAP = 0x05;
+    /** Major type 6: semantic tags. */
+    int TYPE_TAG = 0x06;
+    /** Major type 7: floating point, simple data types. */
+    int TYPE_FLOAT_SIMPLE = 0x07;
+    
     /** Denotes a one-byte value (uint8). */
     int ONE_BYTE = 0x18;
     /** Denotes a two-byte value (uint16). */

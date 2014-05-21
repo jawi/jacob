@@ -7,24 +7,7 @@
  */
 package jacob;
 
-import static jacob.CborConstants.BREAK;
-import static jacob.CborConstants.DOUBLE_PRECISION_FLOAT;
-import static jacob.CborConstants.FALSE;
-import static jacob.CborConstants.HALF_PRECISION_FLOAT;
-import static jacob.CborConstants.NULL;
-import static jacob.CborConstants.ONE_BYTE;
-import static jacob.CborConstants.SINGLE_PRECISION_FLOAT;
-import static jacob.CborConstants.TRUE;
-import static jacob.CborConstants.UNDEFINED;
-import static jacob.CborType.ARRAY;
-import static jacob.CborType.BYTE_STRING;
-import static jacob.CborType.FLOAT_SIMPLE;
-import static jacob.CborType.MAP;
-import static jacob.CborType.NEGATIVE_INTEGER;
-import static jacob.CborType.TAG;
-import static jacob.CborType.TEXT_STRING;
-import static jacob.CborType.UNSIGNED_INTEGER;
-import static jacob.CborType.decode;
+import static jacob.CborConstants.*;
 import static org.junit.Assert.assertEquals;
 
 import java.io.ByteArrayInputStream;
@@ -96,19 +79,18 @@ public class CborDecoderTestBase<T> {
      * @throws IOException in case of I/O problems writing the CBOR-encoded value to the underlying output stream.
      */
     protected Object readGenericItem() throws IOException {
-        // Peek at the next byte...
-        int ib = m_is.read();
-        m_is.unread(ib);
+        // Peek at the next type...
+        CborType type = m_stream.peekType();
+        
+        int mt = type.getMajorType();
 
-        CborType mt = decode(ib);
-
-        if (mt == UNSIGNED_INTEGER || mt == NEGATIVE_INTEGER) {
+        if (mt == TYPE_UNSIGNED_INTEGER || mt == TYPE_NEGATIVE_INTEGER) {
             return m_stream.readInt();
-        } else if (mt == BYTE_STRING) {
+        } else if (mt == TYPE_BYTE_STRING) {
             return m_stream.readByteString();
-        } else if (mt == TEXT_STRING) {
+        } else if (mt == TYPE_TEXT_STRING) {
             return m_stream.readTextString();
-        } else if (mt == ARRAY) {
+        } else if (mt == TYPE_ARRAY) {
             long len = m_stream.readArrayLength();
 
             List<Object> result = new ArrayList<>();
@@ -121,7 +103,7 @@ public class CborDecoderTestBase<T> {
                 result.add(item);
             }
             return result;
-        } else if (mt == MAP) {
+        } else if (mt == TYPE_MAP) {
             long len = m_stream.readMapLength();
 
             Map<Object, Object> result = new HashMap<>();
@@ -135,10 +117,10 @@ public class CborDecoderTestBase<T> {
                 result.put(key, value);
             }
             return result;
-        } else if (mt == TAG) {
+        } else if (mt == TYPE_TAG) {
             return m_stream.readTag();
-        } else if (mt == FLOAT_SIMPLE) {
-            int subtype = ib & 0x1f;
+        } else if (mt == TYPE_FLOAT_SIMPLE) {
+            int subtype = type.getAdditionalInfo();
             if (subtype < ONE_BYTE) {
                 if (subtype == FALSE || subtype == TRUE) {
                     return m_stream.readBoolean();

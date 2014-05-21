@@ -7,22 +7,7 @@
  */
 package jacob;
 
-import static jacob.CborConstants.BREAK;
-import static jacob.CborConstants.EIGHT_BYTES;
-import static jacob.CborConstants.FALSE;
-import static jacob.CborConstants.FOUR_BYTES;
-import static jacob.CborConstants.NULL;
-import static jacob.CborConstants.ONE_BYTE;
-import static jacob.CborConstants.TRUE;
-import static jacob.CborConstants.TWO_BYTES;
-import static jacob.CborConstants.UNDEFINED;
-import static jacob.CborType.ARRAY;
-import static jacob.CborType.BYTE_STRING;
-import static jacob.CborType.FLOAT_SIMPLE;
-import static jacob.CborType.MAP;
-import static jacob.CborType.NEGATIVE_INTEGER;
-import static jacob.CborType.TAG;
-import static jacob.CborType.TEXT_STRING;
+import static jacob.CborConstants.*;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -31,6 +16,8 @@ import java.io.OutputStream;
  * Provides an encoder capable of encoding data into CBOR format to a given {@link OutputStream}.
  */
 public class CborEncoder {
+    private static final int NEG_INT_MASK = TYPE_NEGATIVE_INTEGER << 5;
+
     private final OutputStream m_os;
 
     /**
@@ -95,7 +82,7 @@ public class CborEncoder {
      * @throws IOException in case of I/O problems writing the CBOR-encoded value to the underlying output stream.
      */
     public void writeArrayStart() throws IOException {
-        m_os.write(ARRAY.encode(BREAK));
+        writeSimpleType(TYPE_ARRAY, BREAK);
     }
 
     /**
@@ -112,7 +99,7 @@ public class CborEncoder {
         if (length < 0) {
             throw new IllegalArgumentException("Invalid array-length!");
         }
-        writeType(ARRAY, length);
+        writeType(TYPE_ARRAY, length);
     }
 
     /**
@@ -122,7 +109,7 @@ public class CborEncoder {
      * @throws IOException in case of I/O problems writing the CBOR-encoded value to the underlying output stream.
      */
     public void writeBoolean(boolean value) throws IOException {
-        m_os.write(FLOAT_SIMPLE.encode(value ? TRUE : FALSE));
+        writeSimpleType(TYPE_FLOAT_SIMPLE, value ? TRUE : FALSE);
     }
 
     /**
@@ -131,7 +118,7 @@ public class CborEncoder {
      * @throws IOException in case of I/O problems writing the CBOR-encoded value to the underlying output stream.
      */
     public void writeBreak() throws IOException {
-        m_os.write(FLOAT_SIMPLE.encode(BREAK));
+        writeSimpleType(TYPE_FLOAT_SIMPLE, BREAK);
     }
 
     /**
@@ -141,7 +128,7 @@ public class CborEncoder {
      * @throws IOException in case of I/O problems writing the CBOR-encoded value to the underlying output stream.
      */
     public void writeByteString(byte[] bytes) throws IOException {
-        writeString(BYTE_STRING, bytes);
+        writeString(TYPE_BYTE_STRING, bytes);
     }
 
     /**
@@ -154,7 +141,7 @@ public class CborEncoder {
      * @throws IOException in case of I/O problems writing the CBOR-encoded value to the underlying output stream.
      */
     public void writeByteStringStart() throws IOException {
-        m_os.write(BYTE_STRING.encode(BREAK));
+        writeSimpleType(TYPE_BYTE_STRING, BREAK);
     }
 
     /**
@@ -164,7 +151,7 @@ public class CborEncoder {
      * @throws IOException in case of I/O problems writing the CBOR-encoded value to the underlying output stream.
      */
     public void writeDouble(double value) throws IOException {
-        writeUInt64(FLOAT_SIMPLE.bitMask(), Double.doubleToRawLongBits(value));
+        writeUInt64(TYPE_FLOAT_SIMPLE << 5, Double.doubleToRawLongBits(value));
     }
 
     /**
@@ -174,7 +161,7 @@ public class CborEncoder {
      * @throws IOException in case of I/O problems writing the CBOR-encoded value to the underlying output stream.
      */
     public void writeFloat(float value) throws IOException {
-        writeUInt32(FLOAT_SIMPLE.bitMask(), Float.floatToRawIntBits(value));
+        writeUInt32(TYPE_FLOAT_SIMPLE << 5, Float.floatToRawIntBits(value));
     }
 
     /**
@@ -184,7 +171,7 @@ public class CborEncoder {
      * @throws IOException in case of I/O problems writing the CBOR-encoded value to the underlying output stream.
      */
     public void writeHalfPrecisionFloat(float value) throws IOException {
-        writeUInt16(FLOAT_SIMPLE.bitMask(), halfPrecisionToRawIntBits(value));
+        writeUInt16(TYPE_FLOAT_SIMPLE << 5, halfPrecisionToRawIntBits(value));
     }
 
     /**
@@ -197,7 +184,7 @@ public class CborEncoder {
         // extends the sign over all bits...
         long sign = value >> 63;
         // in case value is negative, this bit should be set...
-        int mt = (int) (sign & NEGATIVE_INTEGER.bitMask());
+        int mt = (int) (sign & NEG_INT_MASK);
         // complement negative value...
         value = (sign ^ value);
 
@@ -214,7 +201,7 @@ public class CborEncoder {
         // extends the sign over all bits...
         int sign = value >> 31;
         // in case value is negative, this bit should be set...
-        int mt = (int) (sign & NEGATIVE_INTEGER.bitMask());
+        int mt = (int) (sign & NEG_INT_MASK);
         // complement negative value...
         writeUInt16(mt, (sign ^ value) & 0xffff);
     }
@@ -229,7 +216,7 @@ public class CborEncoder {
         // extends the sign over all bits...
         long sign = value >> 63;
         // in case value is negative, this bit should be set...
-        int mt = (int) (sign & NEGATIVE_INTEGER.bitMask());
+        int mt = (int) (sign & NEG_INT_MASK);
         // complement negative value...
         writeUInt32(mt, (int) ((sign ^ value) & 0xffffffffL));
     }
@@ -244,7 +231,7 @@ public class CborEncoder {
         // extends the sign over all bits...
         long sign = value >> 63;
         // in case value is negative, this bit should be set...
-        int mt = (int) (sign & NEGATIVE_INTEGER.bitMask());
+        int mt = (int) (sign & NEG_INT_MASK);
         // complement negative value...
         writeUInt64(mt, sign ^ value);
     }
@@ -259,7 +246,7 @@ public class CborEncoder {
         // extends the sign over all bits...
         int sign = value >> 31;
         // in case value is negative, this bit should be set...
-        int mt = (int) (sign & NEGATIVE_INTEGER.bitMask());
+        int mt = (int) (sign & NEG_INT_MASK);
         // complement negative value...
         writeUInt8(mt, (sign ^ value) & 0xff);
     }
@@ -274,7 +261,7 @@ public class CborEncoder {
      * @throws IOException in case of I/O problems writing the CBOR-encoded value to the underlying output stream.
      */
     public void writeMapStart() throws IOException {
-        m_os.write(MAP.encode(BREAK));
+        writeSimpleType(TYPE_MAP, BREAK);
     }
 
     /**
@@ -291,7 +278,7 @@ public class CborEncoder {
         if (length < 0) {
             throw new IllegalArgumentException("Invalid length of map!");
         }
-        writeType(MAP, length);
+        writeType(TYPE_MAP, length);
     }
 
     /**
@@ -300,7 +287,7 @@ public class CborEncoder {
      * @throws IOException in case of I/O problems writing the CBOR-encoded value to the underlying output stream.
      */
     public void writeNull() throws IOException {
-        m_os.write(FLOAT_SIMPLE.encode(NULL));
+        writeSimpleType(TYPE_FLOAT_SIMPLE, NULL);
     }
 
     /**
@@ -312,7 +299,7 @@ public class CborEncoder {
     public void writeSimpleValue(byte simpleValue) throws IOException {
         // convert to unsigned value...
         int value = (simpleValue & 0xff);
-        writeType(FLOAT_SIMPLE, value);
+        writeType(TYPE_FLOAT_SIMPLE, value);
     }
 
     /**
@@ -325,7 +312,7 @@ public class CborEncoder {
         // extends the sign over all bits...
         int sign = value >> 31;
         // in case value is negative, this bit should be set...
-        int mt = (int) (sign & NEGATIVE_INTEGER.bitMask());
+        int mt = (int) (sign & NEG_INT_MASK);
         // complement negative value...
         value = Math.min(0x17, (sign ^ value));
 
@@ -343,7 +330,7 @@ public class CborEncoder {
         if (tag < 0) {
             throw new IllegalArgumentException("Invalid tag specification, cannot be negative!");
         }
-        writeType(TAG, tag);
+        writeType(TYPE_TAG, tag);
     }
 
     /**
@@ -357,7 +344,7 @@ public class CborEncoder {
      * @throws IOException in case of I/O problems writing the CBOR-encoded value to the underlying output stream.
      */
     public void writeTextString(String value) throws IOException {
-        writeString(TEXT_STRING, value == null ? null : value.getBytes("UTF-8"));
+        writeString(TYPE_TEXT_STRING, value == null ? null : value.getBytes("UTF-8"));
     }
 
     /**
@@ -370,7 +357,7 @@ public class CborEncoder {
      * @throws IOException in case of I/O problems writing the CBOR-encoded value to the underlying output stream.
      */
     public void writeTextStringStart() throws IOException {
-        m_os.write(TEXT_STRING.encode(BREAK));
+        writeSimpleType(TYPE_TEXT_STRING, BREAK);
     }
 
     /**
@@ -379,7 +366,18 @@ public class CborEncoder {
      * @throws IOException in case of I/O problems writing the CBOR-encoded value to the underlying output stream.
      */
     public void writeUndefined() throws IOException {
-        m_os.write(FLOAT_SIMPLE.encode(UNDEFINED));
+        writeSimpleType(TYPE_FLOAT_SIMPLE, UNDEFINED);
+    }
+
+    /**
+     * Encodes and writes the major type and value as a simple type.
+     * 
+     * @param majorType the major type of the value to write, denotes what semantics the written value has;
+     * @param value the value to write, values from [0..31] are supported.
+     * @throws IOException in case of I/O problems writing the CBOR-encoded value to the underlying output stream.
+     */
+    protected void writeSimpleType(int majorType, int value) throws IOException {
+        m_os.write((majorType << 5) | (value & 0x1f));
     }
 
     /**
@@ -389,7 +387,7 @@ public class CborEncoder {
      * @param value the byte string to write, can be <code>null</code> in which case a byte-string of length <tt>0</tt> is written.
      * @throws IOException in case of I/O problems writing the CBOR-encoded value to the underlying output stream.
      */
-    protected void writeString(CborType majorType, byte[] bytes) throws IOException {
+    protected void writeString(int majorType, byte[] bytes) throws IOException {
         int len = (bytes == null) ? 0 : bytes.length;
         writeType(majorType, len);
         for (int i = 0; i < len; i++) {
@@ -404,8 +402,8 @@ public class CborEncoder {
      * @param value the value to write, values from {@link Long#MIN_VALUE} to {@link Long#MAX_VALUE} are supported.
      * @throws IOException in case of I/O problems writing the CBOR-encoded value to the underlying output stream.
      */
-    protected void writeType(CborType majorType, long value) throws IOException {
-        writeUInt(majorType.bitMask(), value);
+    protected void writeType(int majorType, long value) throws IOException {
+        writeUInt((majorType << 5), value);
     }
 
     /**
