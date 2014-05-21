@@ -1,7 +1,114 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project name="project" default="build">
+<project name="jacob" default="build">
 
-	<!-- -->
+	<!-- 
+         INIT
+    -->
 
-	<import file="../cnf/build.xml" />
+	<target name="init" unless="initialized">
+		<!-- Initialise some basic properties -->
+		<tstamp>
+			<format property="NOW" pattern="yyyyMMdd-HHmmss" timezone="UTC" />
+		</tstamp>
+		<dirname property="projectdir" file="${ant.file}" />
+
+        <condition property="buildDirExists">
+            <available file="${basedir}/build/biz.aQute.bnd-2.2.0.jar" type="file" />
+        </condition>
+	    <antcall target="init-build" />
+
+		<!-- Define the location of bnd -->
+		<path id="bnd-classpath" location="${basedir}/build/biz.aQute.bnd-2.2.0.jar" />
+
+		<!-- Load bnd and prepare the workspace -->
+		<taskdef resource="aQute/bnd/ant/taskdef.properties" classpathref="bnd-classpath" />
+		<bndprepare basedir="${projectdir}" print="false" top="${release.dir}" />
+
+		<condition property="testDirExists">
+			<available file="${basedir}/test" type="dir" />
+		</condition>
+
+		<!-- Create a marker property to indicate that initialisation has been completed -->
+		<property name="initialized" value="set" />
+	</target>
+
+	<target name="init-build" unless="buildDirExists">
+        <mkdir dir="${basedir}/build" />
+        <copy todir="${basedir}/build" flatten="true">
+            <resources>
+                <url url="https://github.com/bndtools/bundle-hub/raw/master/biz.aQute.bnd/biz.aQute.bnd-2.2.0.jar" />
+                <url url="http://search.maven.org/remotecontent?filepath=junit/junit/4.11/junit-4.11.jar" />
+                <url url="http://search.maven.org/remotecontent?filepath=org/hamcrest/hamcrest-core/1.3/hamcrest-core-1.3.jar" />
+            </resources>
+        </copy>
+	</target>
+
+	<!--
+         COMPILE
+         Compile the sources. 
+    -->
+	<target name="compile" if="project.sourcepath">
+		<mkdir dir="${project.output}" />
+		<javac fork="yes" executable="${javac}" srcdir="${project.sourcepath}" destdir="${project.output}" classpath="${project.buildpath}" 
+			deprecation="true" listfiles="false" target="1.7" source="1.7" debug="${javac.debug}" includeAntRuntime="no" verbose="no" />
+		<copy todir="${project.output}" verbose="${verbose}" preservelastmodified="true">
+			<fileset dir="${project.sourcepath}">
+				<exclude name="**/*.java" />
+				<exclude name="**/*.class" />
+			</fileset>
+		</copy>
+	</target>
+
+	<!-- 
+        JARS
+        Iterate of the jars to build.
+    -->
+	<target name="build" depends="init,compile">
+		<mkdir dir="${target}" />
+		<bnd command="build" exceptions="true" basedir="${project}" />
+	</target>
+
+	<!-- 
+        JUNIT
+    -->
+	<target name="compileTests" depends="init,build" if="testDirExists">
+		<mkdir dir="bin_test" />
+		<javac fork="yes" executable="${javac}" srcdir="test" destdir="bin_test" classpath="${project.buildpath}:${project.testpath}:build/junit-4.11.jar:build/hamcrest-core-1.3.jar"
+			deprecation="true" listfiles="false" target="1.7" source="1.7" debug="no" includeAntRuntime="no" verbose="no" />
+		<copy todir="bin_test" verbose="${verbose}" preservelastmodified="true">
+			<fileset dir="test">
+				<exclude name="**/*.java" />
+				<exclude name="**/*.class" />
+			</fileset>
+		</copy>
+	</target>
+
+	<target name="junit" depends="init,compileTests" if="testDirExists">
+		<junit showoutput="true" printsummary="true" haltonerror="true" haltonfailure="true" fork="false">
+			<classpath path="${project.buildpath}:build/junit-4.11.jar:build/hamcrest-core-1.3.jar:bin_test/" />
+			<formatter type="xml" />
+			<batchtest todir="${target}">
+				<fileset dir="test">
+					<include name="**/*Test.java" />
+				</fileset>
+			</batchtest>
+		</junit>
+	</target>
+
+	<!--
+         CLEAN
+    -->
+	<target name="mrproper" depends="init,clean">
+		<antcall target="clean" />
+		<delete dir="build" />
+	</target>
+
+	<target name="clean" depends="init">
+		<bnd command="clean" exceptions="true" basedir="${project}" />
+		<delete dir="bin" />
+		<delete dir="bin_test" />
+		<delete dir="test-output" />
+		<delete dir="${target}" />
+	</target>
+
 </project>

@@ -1,5 +1,7 @@
 Bundle-Name: jacob
-Bundle-Description: CBOR implementation in Java
-Bundle-Copyright: J.W. Janssen, j.w.janssen@lxtreme.nl
+Bundle-Description: CBOR (RFC7049) implementation in Java
+Bundle-Copyright: (C) 2014 - J.W. Janssen, <j.w.janssen@lxtreme.nl>
 Bundle-License: Apache Public License v2.0
+Bundle-Version: 1.0.0
 Export-Package: jacob
+-removeheaders: Tool,Created-By
