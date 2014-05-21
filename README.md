@@ -17,8 +17,6 @@ are supported by this implementation.
 
 - [x] add support for encoding/decoding semantic tags;
 - [ ] add better support for decoding unlimited arrays, strings and maps;
-- [ ] provide a "lazy"/"chunked" decoder API;
-- [ ] provide an event-like API, similar as to StAX;
 - [ ] implement support for `uint64_t` types that cannot handled directly by Java's long value;
 - [ ] better error handling and testing.
 
